@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Logo from "./Logo";
+import { useGrowthzoneProfile } from "../providers/GrowthzoneProfileContext";
 
 const NAV_ITEMS = [
   {
@@ -63,8 +65,27 @@ function SearchIcon({ className = "" }) {
 }
 
 export default function Header() {
+  const router = useRouter();
+  const { profile, refreshProfile } = useGrowthzoneProfile();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openIdx, setOpenIdx] = useState(null);
+  const isLoggedIn = profile.status === "ready";
+
+  async function handleLogout() {
+    try {
+      await fetch("/api/growthzone/oauth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+    } finally {
+      if (typeof window !== "undefined") {
+        window.sessionStorage.removeItem("ppcu_growthzone_profile");
+      }
+      await refreshProfile();
+      setMobileOpen(false);
+      router.push("/login");
+    }
+  }
 
   return (
     <header className="w-full border-b border-brand-gray bg-white">
@@ -83,9 +104,15 @@ export default function Header() {
                 </Link>
               </li>
               <li className="list-none">
-                <Link href="/login" className="utility-link">
-                  Log In
-                </Link>
+                {isLoggedIn ? (
+                  <button type="button" className="utility-link" onClick={handleLogout}>
+                    Log Out
+                  </button>
+                ) : (
+                  <Link href="/login" className="utility-link">
+                    Log In
+                  </Link>
+                )}
               </li>
             </ul>
 
@@ -169,6 +196,25 @@ export default function Header() {
           className="lg:hidden border-t border-brand-gray bg-white"
         >
           <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 py-2">
+            <div className="border-b border-brand-gray/70 pb-2 mb-1">
+              {isLoggedIn ? (
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="block py-2 text-[15px] font-medium text-neutral-800 hover:text-brand-blue"
+                >
+                  Log Out
+                </button>
+              ) : (
+                <Link
+                  href="/login"
+                  className="block py-2 text-[15px] font-medium text-neutral-800 hover:text-brand-blue"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  Log In
+                </Link>
+              )}
+            </div>
             {NAV_ITEMS.map((item) => (
               <div key={item.label} className="border-b border-brand-gray/70 last:border-b-0">
                 <Link

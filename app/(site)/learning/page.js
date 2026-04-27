@@ -121,6 +121,19 @@ export default function LearningPage() {
 
       <section className="rounded-xl border border-gray-200 bg-white p-6">
         <h2 className="text-xl font-bold text-gray-900">Manage Learners</h2>
+        <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <input
+            type="text"
+            placeholder="Search learners..."
+            className="w-full sm:max-w-sm rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700"
+          />
+          <button
+            type="button"
+            className="inline-flex items-center justify-center rounded bg-brand-blue px-4 py-2 text-sm font-semibold text-white"
+          >
+            Add Learner
+          </button>
+        </div>
         <div className="mt-4 overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead>
@@ -130,7 +143,8 @@ export default function LearningPage() {
                 <th className="py-2 pr-4">Status</th>
                 <th className="py-2 pr-4">Progress</th>
                 <th className="py-2 pr-4">Hours</th>
-                <th className="py-2">Credits</th>
+                <th className="py-2 pr-4">Credits</th>
+                <th className="py-2 text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -144,7 +158,39 @@ export default function LearningPage() {
                   <td className="py-2 pr-4">{row.statusText || row.status || "-"}</td>
                   <td className="py-2 pr-4">{row.percentage || "-"}</td>
                   <td className="py-2 pr-4">{row.hoursEarned ?? 0}</td>
-                  <td className="py-2">{row.creditsEarned ?? 0}</td>
+                  <td className="py-2 pr-4">{row.creditsEarned ?? 0}</td>
+                  <td className="py-2 text-right">
+                    <div className="inline-flex items-center gap-2">
+                      <button
+                        type="button"
+                        aria-label="Play learner"
+                        className="inline-flex h-8 w-8 items-center justify-center rounded border border-gray-300 bg-white text-gray-700"
+                      >
+                        <svg
+                          className="h-4 w-4"
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                          aria-hidden="true"
+                        >
+                          <path d="M8 5v14l11-7z" />
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="Pause learner"
+                        className="inline-flex h-8 w-8 items-center justify-center rounded border border-gray-300 bg-white text-gray-700"
+                      >
+                        <svg
+                          className="h-4 w-4"
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                          aria-hidden="true"
+                        >
+                          <path d="M7 5h4v14H7zM13 5h4v14h-4z" />
+                        </svg>
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>

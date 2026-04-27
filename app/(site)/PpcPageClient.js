@@ -80,13 +80,20 @@ export default function PpcPageClient({ lib, lotm, courses = [] }) {
             </div>
           </div>
           <div className="min-h-10 min-w-[220px] flex items-center justify-end text-white text-right">
-            {userProfile.status === "ready" &&
-            (userProfile.firstName ||
-              userProfile.lastName ||
-              userProfile.name ||
-              userProfile.business ||
-              userProfile.title ||
-              userProfile.type) ? (
+            {userProfile.status === "loading" ? (
+              <div className="w-[260px] animate-pulse">
+                <div className="ml-auto h-5 w-44 rounded bg-white/35" />
+                <div className="ml-auto mt-2 h-3.5 w-52 rounded bg-white/25" />
+                <div className="ml-auto mt-3 h-5 w-24 rounded-full bg-brand-green/60" />
+                <div className="ml-auto mt-4 h-3.5 w-36 rounded bg-white/20" />
+              </div>
+            ) : userProfile.status === "ready" &&
+              (userProfile.firstName ||
+                userProfile.lastName ||
+                userProfile.name ||
+                userProfile.business ||
+                userProfile.title ||
+                userProfile.type) ? (
               <div className="leading-tight">
                 <div className="font-semibold text-lg">
                   {`Welcome, ${
