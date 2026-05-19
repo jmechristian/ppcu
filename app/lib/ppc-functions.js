@@ -1,3 +1,4 @@
+import awsExports from "../../src/aws-exports";
 import { getLMSCourse } from "../../src/graphql/queries";
 
 const getPPCLibraryQuery = /* GraphQL */ `
@@ -121,6 +122,14 @@ function getGraphqlConfigs() {
       return;
     }
     configs.push({ endpoint, apiKey, source });
+  }
+
+  if (awsExports?.aws_appsync_graphqlEndpoint && awsExports?.aws_appsync_apiKey) {
+    addConfig(
+      awsExports.aws_appsync_graphqlEndpoint,
+      awsExports.aws_appsync_apiKey,
+      "aws-exports",
+    );
   }
 
   addConfig(process.env.GRAPHQL_ENDPOINT, process.env.GRAPHQL_API_KEY, "env-graphql");
@@ -249,11 +258,9 @@ export const cpsCourses = [
 
 export async function getPpcPageData() {
   const [lib, lotm, courseDetails] = await Promise.all([
-    getPPCLibrary().catch(() => null),
-    getAllLearningOfTheMonths().catch(() => []),
-    Promise.all(cpsCourses.slice(0, 8).map((id) => getCourseByID(id).catch(() => null))).catch(
-      () => [],
-    ),
+    getPPCLibrary(),
+    getAllLearningOfTheMonths(),
+    Promise.all(cpsCourses.slice(0, 8).map((id) => getCourseByID(id))),
   ]);
 
   const courses = courseDetails.filter(Boolean);

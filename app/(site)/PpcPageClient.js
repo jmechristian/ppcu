@@ -36,7 +36,7 @@ function formatDate(value) {
 }
 
 function toSlideshowEmbedUrl(rawUrl) {
-  if (!rawUrl) return "";
+  if (!rawUrl) return null;
   const match = rawUrl.match(/\/presentation\/d\/([^/]+)/);
   if (!match) return rawUrl;
   const deckId = match[1];
@@ -64,6 +64,7 @@ export default function PpcPageClient({ lib, lotm = [], courses = [] }) {
   const currentItems = filteredLotm.slice(start, start + perPage);
 
   const heroBg = lib?.backgroundImage || FALLBACK_BG;
+  const slideUrl = toSlideshowEmbedUrl(lib?.slide || "");
 
   return (
     <div className="w-full flex flex-col lg:pt-12 pb-28 gap-12">
@@ -148,11 +149,15 @@ export default function PpcPageClient({ lib, lotm = [], courses = [] }) {
           }}
         />
         <div className="flex flex-col gap-2">
-          <iframe
-            title="PPC slides"
-            src={toSlideshowEmbedUrl(lib?.slide || "")}
-            className="w-full aspect-video border border-gray-200 bg-white"
-          />
+          {slideUrl ? (
+            <iframe
+              title="PPC slides"
+              src={slideUrl}
+              className="w-full aspect-video border border-gray-200 bg-white"
+            />
+          ) : (
+            <div className="w-full aspect-video border border-gray-200 bg-white" />
+          )}
           <a
             href={lib?.pdf || "#"}
             target="_blank"
