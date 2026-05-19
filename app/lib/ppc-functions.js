@@ -1,4 +1,3 @@
-import awsExports from "../../src/aws-exports";
 import { getLMSCourse } from "../../src/graphql/queries";
 
 const getPPCLibraryQuery = /* GraphQL */ `
@@ -116,27 +115,64 @@ const minimalCreateOrderMutation = /* GraphQL */ `
 function getGraphqlConfigs() {
   const configs = [];
 
-  function addConfig(endpoint, apiKey, source) {
-    if (!endpoint || !apiKey) return;
-    if (configs.some((config) => config.endpoint === endpoint && config.apiKey === apiKey)) {
-      return;
-    }
-    configs.push({ endpoint, apiKey, source });
+  function cleanEnvValue(value) {
+    if (value == null) return "";
+    return String(value).trim().replace(/^['"]|['"]$/g, "");
   }
 
-  if (awsExports?.aws_appsync_graphqlEndpoint && awsExports?.aws_appsync_apiKey) {
-    addConfig(
-      awsExports.aws_appsync_graphqlEndpoint,
-      awsExports.aws_appsync_apiKey,
-      "aws-exports",
-    );
+  function normalizeEndpoint(endpoint) {
+    const cleanedEndpoint = cleanEnvValue(endpoint);
+    if (!cleanedEndpoint) return null;
+    try {
+      const url = new URL(cleanedEndpoint);
+      if (!url.pathname || url.pathname === "/") {
+        url.pathname = "/graphql";
+      }
+      return url.toString();
+    } catch {
+      return null;
+    }
+  }
+
+  function addConfig(endpoint, apiKey, source) {
+    const cleanedApiKey = cleanEnvValue(apiKey);
+    if (!cleanedApiKey) return;
+    const normalizedEndpoint = normalizeEndpoint(endpoint);
+    if (!normalizedEndpoint) return;
+    if (
+      configs.some(
+        (config) => config.endpoint === normalizedEndpoint && config.apiKey === cleanedApiKey,
+      )
+    ) {
+      return;
+    }
+    configs.push({ endpoint: normalizedEndpoint, apiKey: cleanedApiKey, source });
   }
 
   addConfig(process.env.GRAPHQL_ENDPOINT, process.env.GRAPHQL_API_KEY, "env-graphql");
   addConfig(
+    process.env.GRAPHQL_ENDPOINT,
+    process.env.NEXT_PUBLIC_API_KEY,
+    "env-graphql-next-public-api-key",
+  );
+  addConfig(process.env.GRAPHQL_ENDPOINT, process.env.API_KEY, "env-graphql-api-key");
+  addConfig(process.env.NEXT_PUBLIC_API_URL, process.env.NEXT_PUBLIC_API_KEY, "env-next-public-api");
+  addConfig(
+    process.env.NEXT_PUBLIC_API_URL,
+    process.env.GRAPHQL_API_KEY,
+    "env-next-public-api-graphql-key",
+  );
+  addConfig(process.env.API_URL, process.env.API_KEY, "env-api");
+  addConfig(process.env.API_URL, process.env.GRAPHQL_API_KEY, "env-api-graphql-key");
+  addConfig(
     process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT,
     process.env.NEXT_PUBLIC_GRAPHQL_API_KEY,
     "env-next-public",
+  );
+  addConfig(
+    process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT,
+    process.env.NEXT_PUBLIC_API_KEY,
+    "env-next-public-next-public-api-key",
   );
   addConfig(
     process.env.AWS_APPSYNC_GRAPHQL_ENDPOINT,
