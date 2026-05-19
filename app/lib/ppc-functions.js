@@ -249,9 +249,11 @@ export const cpsCourses = [
 
 export async function getPpcPageData() {
   const [lib, lotm, courseDetails] = await Promise.all([
-    getPPCLibrary(),
-    getAllLearningOfTheMonths(),
-    Promise.all(cpsCourses.slice(0, 8).map((id) => getCourseByID(id))),
+    getPPCLibrary().catch(() => null),
+    getAllLearningOfTheMonths().catch(() => []),
+    Promise.all(cpsCourses.slice(0, 8).map((id) => getCourseByID(id).catch(() => null))).catch(
+      () => [],
+    ),
   ]);
 
   const courses = courseDetails.filter(Boolean);

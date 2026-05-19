@@ -43,7 +43,7 @@ function toSlideshowEmbedUrl(rawUrl) {
   return `https://docs.google.com/presentation/d/${deckId}/embed?start=false&loop=true&delayms=3000`;
 }
 
-export default function PpcPageClient({ lib, lotm, courses = [] }) {
+export default function PpcPageClient({ lib, lotm = [], courses = [] }) {
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
   const { profile: userProfile } = useGrowthzoneProfile();
