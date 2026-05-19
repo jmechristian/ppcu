@@ -1,4 +1,3 @@
-import awsExports from "../../src/aws-exports";
 import { getLMSCourse } from "../../src/graphql/queries";
 
 const getPPCLibraryQuery = /* GraphQL */ `
@@ -116,37 +115,35 @@ const minimalCreateOrderMutation = /* GraphQL */ `
 function getGraphqlConfigs() {
   const configs = [];
 
-  if (awsExports?.aws_appsync_graphqlEndpoint && awsExports?.aws_appsync_apiKey) {
-    configs.push({
-      endpoint: awsExports.aws_appsync_graphqlEndpoint,
-      apiKey: awsExports.aws_appsync_apiKey,
-      source: "aws-exports",
-    });
+  function addConfig(endpoint, apiKey, source) {
+    if (!endpoint || !apiKey) return;
+    if (configs.some((config) => config.endpoint === endpoint && config.apiKey === apiKey)) {
+      return;
+    }
+    configs.push({ endpoint, apiKey, source });
   }
 
-  if (process.env.GRAPHQL_ENDPOINT && process.env.GRAPHQL_API_KEY) {
-    configs.push({
-      endpoint: process.env.GRAPHQL_ENDPOINT,
-      apiKey: process.env.GRAPHQL_API_KEY,
-      source: "env-graphql",
-    });
-  }
-
-  if (process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT && process.env.NEXT_PUBLIC_GRAPHQL_API_KEY) {
-    configs.push({
-      endpoint: process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT,
-      apiKey: process.env.NEXT_PUBLIC_GRAPHQL_API_KEY,
-      source: "env-next-public",
-    });
-  }
-
-  if (process.env.aws_appsync_graphqlEndpoint && process.env.aws_appsync_apiKey) {
-    configs.push({
-      endpoint: process.env.aws_appsync_graphqlEndpoint,
-      apiKey: process.env.aws_appsync_apiKey,
-      source: "env-appsync",
-    });
-  }
+  addConfig(process.env.GRAPHQL_ENDPOINT, process.env.GRAPHQL_API_KEY, "env-graphql");
+  addConfig(
+    process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT,
+    process.env.NEXT_PUBLIC_GRAPHQL_API_KEY,
+    "env-next-public",
+  );
+  addConfig(
+    process.env.AWS_APPSYNC_GRAPHQL_ENDPOINT,
+    process.env.AWS_APPSYNC_API_KEY,
+    "env-aws-appsync",
+  );
+  addConfig(
+    process.env.NEXT_PUBLIC_AWS_APPSYNC_GRAPHQL_ENDPOINT,
+    process.env.NEXT_PUBLIC_AWS_APPSYNC_API_KEY,
+    "env-next-public-aws-appsync",
+  );
+  addConfig(
+    process.env.aws_appsync_graphqlEndpoint,
+    process.env.aws_appsync_apiKey,
+    "env-appsync",
+  );
 
   if (configs.length === 0) {
     throw new Error("Missing GraphQL endpoint/key configuration.");
