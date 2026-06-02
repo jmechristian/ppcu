@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { FaBook, FaHome, FaInfoCircle, FaShoppingCart } from "react-icons/fa";
+import { FaBook, FaCog, FaHome, FaInfoCircle, FaShoppingCart } from "react-icons/fa";
+import { useGrowthzoneProfile } from "../providers/GrowthzoneProfileContext";
 
 const HERO_BANNER_URL =
   "https://packschool.s3.us-east-1.amazonaws.com/PPCU+Website+branding.png";
@@ -39,6 +40,15 @@ function PromoCard({ href, title, imageUrl, eyebrow = "Get Started" }) {
 }
 
 export default function PpcPageClient() {
+  const { profile } = useGrowthzoneProfile();
+  const fullName =
+    [profile.firstName, profile.lastName].filter(Boolean).join(" ") || profile.name || "";
+  const isLoadingProfile = profile.status === "loading";
+  const isPrimaryContact = /primary/i.test(profile.type || "");
+  const hasProfile = Boolean(
+    fullName || profile.title || profile.business || profile.type,
+  );
+
   return (
     <div className="w-full bg-white py-6 lg:py-7">
       <div className="mx-auto w-full max-w-[1200px]">
@@ -122,7 +132,38 @@ export default function PpcPageClient() {
             </section>
           </div>
 
-          <aside className="border-4 border-[#2a2a2a] bg-white h-fit mt-1">
+          <div className="space-y-3">
+            {(isLoadingProfile || hasProfile) && (
+              <aside className="border-4 border-[#2a2a2a] bg-white p-4">
+                {isLoadingProfile ? (
+                  <div className="animate-pulse space-y-2">
+                    <div className="h-4 w-2/3 rounded bg-gray-200" />
+                    <div className="h-3 w-full rounded bg-gray-200" />
+                    <div className="h-5 w-1/3 rounded-full bg-gray-200" />
+                  </div>
+                ) : (
+                  <>
+                    <div className="text-[13px] font-semibold text-gray-900">
+                      {fullName || "Member"}
+                    </div>
+                    {(profile.title || profile.business) && (
+                      <div className="mt-1 text-[12px] text-gray-700">
+                        {[profile.title, profile.business].filter(Boolean).join(" - ")}
+                      </div>
+                    )}
+                    {profile.type && (
+                      <div className="mt-2">
+                        <span className="inline-flex items-center rounded-full bg-brand-green px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-white">
+                          {profile.type}
+                        </span>
+                      </div>
+                    )}
+                  </>
+                )}
+              </aside>
+            )}
+
+            <aside className="border-4 border-[#2a2a2a] bg-white h-fit mt-1">
             <ul>
               <SidebarItem
                 href="/"
@@ -144,8 +185,16 @@ export default function PpcPageClient() {
                 label="Cart (0 items)"
                 icon={<FaShoppingCart className="h-5 w-5" aria-hidden="true" />}
               />
+              {isPrimaryContact && (
+                <SidebarItem
+                  href="/learning"
+                  label="Admin"
+                  icon={<FaCog className="h-5 w-5" aria-hidden="true" />}
+                />
+              )}
             </ul>
-          </aside>
+            </aside>
+          </div>
         </div>
       </div>
     </div>
