@@ -1,341 +1,153 @@
 "use client";
 
-import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useGrowthzoneProfile } from "../providers/GrowthzoneProfileContext";
+import { FaBook, FaHome, FaInfoCircle, FaShoppingCart } from "react-icons/fa";
 
-const FALLBACK_BG =
-  "https://packschool.s3.us-east-1.amazonaws.com/ppc-card-back.png";
+const HERO_BANNER_URL =
+  "https://packschool.s3.us-east-1.amazonaws.com/PPCU+Website+branding.png";
 
-const FAQS = [
-  {
-    q: "Who is my Paperboard Packaging Council contact?",
-    a: "For curriculum and navigation questions, contact info@paperboardpackagingcouncil.com.",
-  },
-  {
-    q: "What if I run into technical difficulties?",
-    a: "For technical support, email info@packagingschool.com.",
-  },
-  {
-    q: "How do I sign up?",
-    a: "Use the deck/PDF guidance at the top of this page or contact support for enrollment help.",
-  },
-  {
-    q: "How do I access new courses each quarter?",
-    a: "Return to this page each quarter to find newly available courses and updated learning content.",
-  },
-];
-
-function formatDate(value) {
-  if (!value) return "";
-  return new Date(value).toLocaleDateString("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
-function toSlideshowEmbedUrl(rawUrl) {
-  if (!rawUrl) return null;
-  const match = rawUrl.match(/\/presentation\/d\/([^/]+)/);
-  if (!match) return rawUrl;
-  const deckId = match[1];
-  return `https://docs.google.com/presentation/d/${deckId}/embed?start=false&loop=true&delayms=3000`;
-}
-
-export default function PpcPageClient({ lib, lotm = [], courses = [] }) {
-  const [query, setQuery] = useState("");
-  const [page, setPage] = useState(1);
-  const { profile: userProfile } = useGrowthzoneProfile();
-  const perPage = 9;
-
-  const filteredLotm = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return lotm;
-    return lotm.filter(
-      (item) =>
-        item.title?.toLowerCase().includes(q) ||
-        item.subhead?.toLowerCase().includes(q),
-    );
-  }, [lotm, query]);
-
-  const totalPages = Math.max(1, Math.ceil(filteredLotm.length / perPage));
-  const start = (page - 1) * perPage;
-  const currentItems = filteredLotm.slice(start, start + perPage);
-
-  const heroBg = lib?.backgroundImage || FALLBACK_BG;
-  const slideUrl = toSlideshowEmbedUrl(lib?.slide || "");
-
+function SidebarItem({ href, label, icon }) {
   return (
-    <div className="w-full flex flex-col lg:pt-12 pb-28 gap-12">
-      <section className="w-full max-w-[1200px] mx-auto px-4 sm:px-6">
-        <div
-          className="rounded-lg h-[180px] lg:h-[240px] flex items-center justify-between px-8 lg:px-12 bg-cover bg-center"
-          style={{ backgroundImage: `url(${heroBg})` }}
-        >
-          <div className="flex items-center gap-4">
-            <img src="/logo.svg" alt="PPC logo" className="h-20 w-20 lg:h-28 lg:w-28 object-contain" />
-            <div className="text-white font-bold leading-none text-3xl lg:text-5xl">
-              <div>PPC</div>
-              <div>University</div>
-            </div>
-          </div>
-          <div className="min-h-10 min-w-[220px] flex items-center justify-end text-white text-right">
-            {userProfile.status === "loading" ? (
-              <div className="w-[260px] animate-pulse">
-                <div className="ml-auto h-5 w-44 rounded bg-white/35" />
-                <div className="ml-auto mt-2 h-3.5 w-52 rounded bg-white/25" />
-                <div className="ml-auto mt-3 h-5 w-24 rounded-full bg-brand-green/60" />
-                <div className="ml-auto mt-4 h-3.5 w-36 rounded bg-white/20" />
-              </div>
-            ) : userProfile.status === "ready" &&
-              (userProfile.firstName ||
-                userProfile.lastName ||
-                userProfile.name ||
-                userProfile.business ||
-                userProfile.title ||
-                userProfile.type) ? (
-              <div className="leading-tight">
-                <div className="font-semibold text-lg">
-                  {`Welcome, ${
-                    [userProfile.firstName, userProfile.lastName].filter(Boolean).join(" ") ||
-                    userProfile.name ||
-                    ""
-                  }`}
-                </div>
-                {(userProfile.business || userProfile.title) && (
-                  <div className="text-sm font-medium text-white/90">
-                    {[userProfile.title, userProfile.business].filter(Boolean).join(" - ")}
-                  </div>
-                )}
-                {userProfile.type && (
-                  <div className="mt-2">
-                    <span className="inline-flex items-center rounded-full bg-brand-green px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-white">
-                      {userProfile.type}
-                    </span>
-                  </div>
-                )}
-                <div className="mt-4">
-                  <Link
-                    href="/learning"
-                    className="inline-flex items-center gap-1.5 text-[12px] tracking-wide uppercase text-white font-bold hover:opacity-90"
-                  >
-                    <svg
-                      className="h-4 w-4"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      aria-hidden="true"
-                    >
-                      <path d="M3 3h8v8H3zM13 3h8v5h-8zM13 10h8v11h-8zM3 13h8v8H3z" />
-                    </svg>
-                    Learning Dashboard
-                  </Link>
-                </div>
-              </div>
-            ) : (
-              ""
-            )}
-          </div>
-        </div>
-      </section>
+    <li className="border-b border-dashed border-gray-300 last:border-b-0">
+      <Link
+        href={href}
+        className="flex items-center gap-2.5 px-5 py-2.5 text-[17px] font-semibold text-gray-800 hover:text-black"
+      >
+        <span className="text-gray-700">{icon}</span>
+        <span>{label}</span>
+      </Link>
+    </li>
+  );
+}
 
-      <section className="w-full grid lg:grid-cols-2 gap-10 max-w-[1200px] mx-auto px-4 sm:px-6">
-        <div
-          className="text-gray-700 text-lg leading-normal"
-          dangerouslySetInnerHTML={{
-            __html: lib?.description || "Paperboard Packaging Council learning hub.",
-          }}
-        />
-        <div className="flex flex-col gap-2">
-          {slideUrl ? (
-            <iframe
-              title="PPC slides"
-              src={slideUrl}
-              className="w-full aspect-video border border-gray-200 bg-white"
-            />
-          ) : (
-            <div className="w-full aspect-video border border-gray-200 bg-white" />
-          )}
-          <a
-            href={lib?.pdf || "#"}
-            target="_blank"
-            rel="noreferrer"
-            className="text-sm text-gray-700 underline"
-          >
-            Download as PDF
-          </a>
-        </div>
-      </section>
+function PromoCard({ href, title, imageUrl, eyebrow = "Get Started" }) {
+  return (
+    <Link
+      href={href}
+      className="block border border-black/20 overflow-hidden"
+    >
+      <img
+        src={imageUrl}
+        alt={title || eyebrow}
+        className="h-[193px] w-full object-cover"
+      />
+      <div className="h-[50px] bg-[#1f1f1f] text-white flex items-center justify-center px-3">
+        <span className="text-[16px] font-semibold leading-none">{title}</span>
+      </div>
+    </Link>
+  );
+}
 
-      <section className="w-full max-w-[1200px] mx-auto bg-[#DDDDDD] rounded-xl overflow-hidden">
-        <div className="grid grid-cols-5 w-full">
-          <div className="col-span-3 bg-black flex items-center">
-            <div className="py-4 px-6">
-              <div
-                className="w-12 h-12 bg-contain bg-center bg-no-repeat"
-                style={{
-                  backgroundImage:
-                    "url('https://packschool.s3.us-east-1.amazonaws.com/ppc-box.png')",
-                }}
+export default function PpcPageClient() {
+  return (
+    <div className="w-full bg-white py-6 lg:py-7">
+      <div className="mx-auto w-full max-w-[1200px]">
+        <div className="grid gap-6 lg:grid-cols-[74.36%_23.08%] lg:gap-[2.56%] items-start">
+          <div className="space-y-6">
+            <section className="overflow-hidden border border-black/20">
+              <img
+                src={HERO_BANNER_URL}
+                alt="PPC University banner"
+                className="block w-full h-auto"
               />
-            </div>
-            <div className="text-white text-xl font-bold -ml-2">
-              Paperboard Packaging Council University
-            </div>
-          </div>
-          <div className="col-span-2 bg-[#00AE42]" />
-        </div>
-        <div className="p-10 lg:p-14 grid lg:grid-cols-5 gap-12 items-center">
-          <div className="lg:col-span-3 flex flex-col gap-6">
-            <h2 className="text-3xl font-bold text-gray-900">Folding Carton Essentials</h2>
-            <p className="text-gray-700 leading-snug text-lg max-w-3xl">
-              This course explores sustainability in paperboard packaging,
-              covering responsible forestry, eco-friendly design, recycling,
-              composting, and regulations. Gain practical, real-world insight to
-              understand, apply, and help communicate the industry's strong
-              sustainability story.
-            </p>
-            <button className="bg-[#0071CE] text-white px-4 py-2 rounded-md text-lg font-semibold w-fit">
-              Enroll Now -&gt;
-            </button>
-          </div>
-          <div className="lg:col-span-2">
-            <div
-              className="aspect-[4/3] w-full bg-cover bg-center"
-              style={{
-                backgroundImage:
-                  "url('https://packschool.s3.us-east-1.amazonaws.com/ppc-card-back.png')",
-              }}
-            />
-          </div>
-        </div>
-      </section>
+            </section>
 
-      <section className="w-full max-w-[1200px] mx-auto bg-[#DDDDDD] rounded-xl overflow-hidden">
-        <div className="grid grid-cols-5 w-full">
-          <div className="col-span-3 bg-black flex items-center">
-            <div className="py-4 px-6">
-              <div
-                className="w-12 h-12 bg-contain bg-center bg-no-repeat"
-                style={{
-                  backgroundImage:
-                    "url('https://packschool.s3.us-east-1.amazonaws.com/PS+Square+TM+White.png')",
-                }}
-              />
-            </div>
-            <div className="text-white text-xl font-bold -ml-2">Packaging School Courses</div>
-          </div>
-          <div className="col-span-2 bg-[#F39200]" />
-        </div>
-        <div className="grid md:grid-cols-4 gap-6 py-8 px-3 lg:py-10 lg:px-4">
-          {courses.slice(0, 8).map((course) => (
-            <article
-              key={course.id || course.courseId || course.title}
-              className="bg-[#f4f4f5] rounded-md overflow-hidden border border-gray-200"
-            >
-              <div
-                className="aspect-video bg-cover bg-center"
-                style={{ backgroundImage: `url(${course.seoImage || FALLBACK_BG})` }}
-              />
-              <div className="p-3">
-                <h3 className="font-semibold text-sm text-gray-900">
-                  {course.courseId || "PPC"}{" "}
-                  <span className="font-medium">{course.title}</span>
-                </h3>
-                <div className="my-2 text-xs text-gray-600 flex justify-between">
-                  <span>
-                    <span className="line-through">${course.price || 0}</span> $0
-                  </span>
-                  <span>
-                    {course.hours || "0h"} / {course.lessons || 0} lessons
-                  </span>
-                </div>
-                <p className="text-xs text-gray-700 min-h-16">
-                  {course.shortDescription || course.subheadline || ""}
+            <section className="grid lg:grid-cols-[48.72%_48.72%] lg:gap-[2.56%] gap-6">
+              <div className="space-y-4 text-[14px] leading-[1.45] text-gray-800">
+                <p className="max-w-[95%]">
+                  The Paperboard Packaging Council&apos;s member-exclusive learning platform for
+                  the folding carton industry.
                 </p>
-                <button className="mt-3 w-full h-9 bg-gray-900 text-white rounded-md text-sm">
-                  Enroll in Course
-                </button>
+                <p className="max-w-[95%]">
+                  <strong>
+                    Built by and for the paperboard packaging industry, PPC University delivers
+                    the training your workforce needs to succeed.
+                  </strong>{" "}
+                  Whether you&apos;re onboarding new employees, developing skilled operators, or
+                  preparing the next generation of leaders, PPCU offers engaging, high-quality
+                  courses tailored to our industry&apos;s unique processes and challenges.
+                </p>
+                <h2 className="text-[24px] font-semibold leading-none tracking-tight text-[#1f2a44]">
+                  Why PPCU?
+                </h2>
+                <ul className="space-y-1 text-[14px] list-disc pl-5">
+                  <li>
+                    <strong>Onboard Faster</strong> — Give new hires a strong foundation in the
+                    folding carton industry.
+                  </li>
+                  <li>
+                    <strong>Upskill with Ease</strong> — Provide your workforce with practical,
+                    job-ready knowledge.
+                  </li>
+                  <li>
+                    <strong>Lead with Confidence</strong> — Support professional growth and
+                    leadership development.
+                  </li>
+                  <li>
+                    <strong>Maximize Your Membership</strong> — Enjoy exclusive access and
+                    preferred pricing as a PPC member.
+                  </li>
+                </ul>
               </div>
-            </article>
-          ))}
-        </div>
-      </section>
 
-      <section className="w-full max-w-[1200px] mx-auto px-4 sm:px-6 border-y border-gray-300 py-5 flex items-center justify-between gap-4">
-        <h2 className="text-xl font-bold text-gray-700">
-          Your Learning of the Month
-        </h2>
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => {
-            setQuery(e.target.value);
-            setPage(1);
-          }}
-          placeholder="Search courses..."
-          className="px-3 py-2 border rounded-lg text-sm w-full max-w-xs"
-        />
-      </section>
+              <div className="space-y-4">
+                <PromoCard
+                  href="/catalog"
+                  title="Folding Carton Essentials"
+                  imageUrl="https://9bac2b4aa80a4c6e49a5-dd043fb1e2aabe3b5f6da098455a781d.ssl.cf2.rackcdn.com/ppc_61ef8b62ee72cf473eabf19646dabb73.png"
+                />
+                <PromoCard
+                  href="/catalog"
+                  title="Preview PPCU"
+                  imageUrl="https://9bac2b4aa80a4c6e49a5-dd043fb1e2aabe3b5f6da098455a781d.ssl.cf2.rackcdn.com/ppc_779c29325fe6dfd2a9451c1a42858a7e.png"
+                  eyebrow="Check Out A"
+                />
+              </div>
+            </section>
 
-      <section className="w-full max-w-[1200px] mx-auto px-2 sm:px-3">
-        <div className="grid md:grid-cols-4 gap-6">
-          {currentItems.map((lesson) => (
-            <article
-              key={lesson.id || lesson.slug}
-              className="bg-[#f4f4f5] rounded-md overflow-hidden border border-gray-200"
-            >
-              <div
-                className="aspect-video bg-cover bg-center"
-                style={{ backgroundImage: `url(${lesson.seoImage || FALLBACK_BG})` }}
-              />
-              <div className="p-3">
-                <h3 className="font-semibold text-sm text-gray-800 min-h-10">
-                  {lesson.title}
+            <section className="border border-gray-300 bg-[#dddde1]">
+              <div className="px-5 py-3 border-b border-gray-300">
+                <h3 className="text-[17px] leading-[1.15] font-semibold text-[#1f1f1f]">
+                  PPC is currently a members only benefit. Interested in learning more about PPCU?
                 </h3>
-                <div className="text-xs text-gray-600 border-y border-gray-300 py-1 my-2">
-                  {formatDate(lesson.createdAt)}
-                </div>
-                <p className="text-xs text-gray-700 min-h-16">{lesson.subhead}</p>
-                <button className="mt-3 w-full h-9 bg-gray-900 text-white rounded-md text-sm">
-                  Read Lesson
-                </button>
               </div>
-            </article>
-          ))}
-        </div>
+              <div className="px-5 py-2.5">
+                <Link
+                  href="/contact"
+                  className="inline-flex items-center rounded-none bg-brand-green px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-white hover:brightness-110"
+                >
+                  Contact Us
+                </Link>
+              </div>
+            </section>
+          </div>
 
-        <div className="flex items-center justify-center gap-4 mt-8 text-sm text-gray-700">
-          <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
-            &lt;-
-          </button>
-          <span>
-            {page} / {totalPages}
-          </span>
-          <button
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            disabled={page === totalPages}
-          >
-            -&gt;
-          </button>
+          <aside className="border-4 border-[#2a2a2a] bg-white h-fit mt-1">
+            <ul>
+              <SidebarItem
+                href="/"
+                label="Home"
+                icon={<FaHome className="h-5 w-5" aria-hidden="true" />}
+              />
+              <SidebarItem
+                href="/getting-started"
+                label="Getting Started"
+                icon={<FaInfoCircle className="h-5 w-5" aria-hidden="true" />}
+              />
+              <SidebarItem
+                href="/catalog"
+                label="Folding Carton Essentials"
+                icon={<FaBook className="h-5 w-5" aria-hidden="true" />}
+              />
+              <SidebarItem
+                href="/cart"
+                label="Cart (0 items)"
+                icon={<FaShoppingCart className="h-5 w-5" aria-hidden="true" />}
+              />
+            </ul>
+          </aside>
         </div>
-      </section>
-
-      <section className="w-full max-w-[1200px] mx-auto px-4 sm:px-6 bg-[#f4f4f5] rounded-lg p-10">
-        <h2 className="text-2xl font-bold text-gray-900">Frequently asked questions</h2>
-        <div className="mt-6 space-y-3">
-          {FAQS.map((faq) => (
-            <details key={faq.q} className="bg-white border border-gray-200 rounded-md p-4">
-              <summary className="cursor-pointer font-semibold text-gray-900">
-                {faq.q}
-              </summary>
-              <p className="mt-2 text-gray-600">{faq.a}</p>
-            </details>
-          ))}
-        </div>
-      </section>
+      </div>
     </div>
   );
 }

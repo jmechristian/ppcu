@@ -578,6 +578,14 @@ export const onCreateLesson = /* GraphQL */ `
         nextToken
         __typename
       }
+      wired
+      wiredQuestions {
+        question
+        options
+        correctAnswer
+        __typename
+      }
+      wiredLessonId
       createdAt
       updatedAt
       lessonAnalysisId
@@ -655,6 +663,14 @@ export const onUpdateLesson = /* GraphQL */ `
         nextToken
         __typename
       }
+      wired
+      wiredQuestions {
+        question
+        options
+        correctAnswer
+        __typename
+      }
+      wiredLessonId
       createdAt
       updatedAt
       lessonAnalysisId
@@ -732,6 +748,14 @@ export const onDeleteLesson = /* GraphQL */ `
         nextToken
         __typename
       }
+      wired
+      wiredQuestions {
+        question
+        options
+        correctAnswer
+        __typename
+      }
+      wiredLessonId
       createdAt
       updatedAt
       lessonAnalysisId
@@ -1395,6 +1419,7 @@ export const onCreateUser = /* GraphQL */ `
         paymentConfirmation
         contactConsent
         status
+        videoLink
         createdOn
         updatedOn
         icpfCmpmFormUserId
@@ -1647,6 +1672,7 @@ export const onUpdateUser = /* GraphQL */ `
         paymentConfirmation
         contactConsent
         status
+        videoLink
         createdOn
         updatedOn
         icpfCmpmFormUserId
@@ -1899,6 +1925,7 @@ export const onDeleteUser = /* GraphQL */ `
         paymentConfirmation
         contactConsent
         status
+        videoLink
         createdOn
         updatedOn
         icpfCmpmFormUserId
@@ -2593,6 +2620,135 @@ export const onDeleteLearningPathProgress = /* GraphQL */ `
     }
   }
 `;
+export const onCreateBoosterCourseProgress = /* GraphQL */ `
+  subscription OnCreateBoosterCourseProgress(
+    $filter: ModelSubscriptionBoosterCourseProgressFilterInput
+  ) {
+    onCreateBoosterCourseProgress(filter: $filter) {
+      id
+      userId
+      userEmail
+      thinkificCourseId
+      courseTitle
+      completedLessonIds
+      completedLessonTitles
+      totalLessonCount
+      percentComplete
+      milestonesIssued
+      lastCompletedLessonId
+      lastCompletedLessonTitle
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const onUpdateBoosterCourseProgress = /* GraphQL */ `
+  subscription OnUpdateBoosterCourseProgress(
+    $filter: ModelSubscriptionBoosterCourseProgressFilterInput
+  ) {
+    onUpdateBoosterCourseProgress(filter: $filter) {
+      id
+      userId
+      userEmail
+      thinkificCourseId
+      courseTitle
+      completedLessonIds
+      completedLessonTitles
+      totalLessonCount
+      percentComplete
+      milestonesIssued
+      lastCompletedLessonId
+      lastCompletedLessonTitle
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const onDeleteBoosterCourseProgress = /* GraphQL */ `
+  subscription OnDeleteBoosterCourseProgress(
+    $filter: ModelSubscriptionBoosterCourseProgressFilterInput
+  ) {
+    onDeleteBoosterCourseProgress(filter: $filter) {
+      id
+      userId
+      userEmail
+      thinkificCourseId
+      courseTitle
+      completedLessonIds
+      completedLessonTitles
+      totalLessonCount
+      percentComplete
+      milestonesIssued
+      lastCompletedLessonId
+      lastCompletedLessonTitle
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const onCreateBoosterDiscountCode = /* GraphQL */ `
+  subscription OnCreateBoosterDiscountCode(
+    $filter: ModelSubscriptionBoosterDiscountCodeFilterInput
+  ) {
+    onCreateBoosterDiscountCode(filter: $filter) {
+      id
+      userId
+      userEmail
+      thinkificCourseId
+      milestonePercent
+      code
+      issuedAt
+      redeemedAt
+      isRedeemed
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const onUpdateBoosterDiscountCode = /* GraphQL */ `
+  subscription OnUpdateBoosterDiscountCode(
+    $filter: ModelSubscriptionBoosterDiscountCodeFilterInput
+  ) {
+    onUpdateBoosterDiscountCode(filter: $filter) {
+      id
+      userId
+      userEmail
+      thinkificCourseId
+      milestonePercent
+      code
+      issuedAt
+      redeemedAt
+      isRedeemed
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const onDeleteBoosterDiscountCode = /* GraphQL */ `
+  subscription OnDeleteBoosterDiscountCode(
+    $filter: ModelSubscriptionBoosterDiscountCodeFilterInput
+  ) {
+    onDeleteBoosterDiscountCode(filter: $filter) {
+      id
+      userId
+      userEmail
+      thinkificCourseId
+      milestonePercent
+      code
+      issuedAt
+      redeemedAt
+      isRedeemed
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
 export const onCreateLearningPathCourse = /* GraphQL */ `
   subscription OnCreateLearningPathCourse(
     $filter: ModelSubscriptionLearningPathCourseFilterInput
@@ -2833,6 +2989,8 @@ export const onCreateLearningPathLesson = /* GraphQL */ `
         seoUrl
         seoRobots
         seoFollow
+        wired
+        wiredLessonId
         createdAt
         updatedAt
         lessonAnalysisId
@@ -2900,6 +3058,8 @@ export const onUpdateLearningPathLesson = /* GraphQL */ `
         seoUrl
         seoRobots
         seoFollow
+        wired
+        wiredLessonId
         createdAt
         updatedAt
         lessonAnalysisId
@@ -2967,6 +3127,8 @@ export const onDeleteLearningPathLesson = /* GraphQL */ `
         seoUrl
         seoRobots
         seoFollow
+        wired
+        wiredLessonId
         createdAt
         updatedAt
         lessonAnalysisId
@@ -3371,6 +3533,7 @@ export const onCreateIcpfCmpmForm = /* GraphQL */ `
       paymentConfirmation
       contactConsent
       status
+      videoLink
       createdOn
       updatedOn
       icpfCmpmFormUserId
@@ -3466,6 +3629,7 @@ export const onUpdateIcpfCmpmForm = /* GraphQL */ `
       paymentConfirmation
       contactConsent
       status
+      videoLink
       createdOn
       updatedOn
       icpfCmpmFormUserId
@@ -3561,6 +3725,7 @@ export const onDeleteIcpfCmpmForm = /* GraphQL */ `
       paymentConfirmation
       contactConsent
       status
+      videoLink
       createdOn
       updatedOn
       icpfCmpmFormUserId
@@ -9120,6 +9285,8 @@ export const onCreateLessonTags = /* GraphQL */ `
         seoUrl
         seoRobots
         seoFollow
+        wired
+        wiredLessonId
         createdAt
         updatedAt
         lessonAnalysisId
@@ -9178,6 +9345,8 @@ export const onUpdateLessonTags = /* GraphQL */ `
         seoUrl
         seoRobots
         seoFollow
+        wired
+        wiredLessonId
         createdAt
         updatedAt
         lessonAnalysisId
@@ -9236,6 +9405,8 @@ export const onDeleteLessonTags = /* GraphQL */ `
         seoUrl
         seoRobots
         seoFollow
+        wired
+        wiredLessonId
         createdAt
         updatedAt
         lessonAnalysisId
@@ -9737,6 +9908,8 @@ export const onCreateUserCompletedLessons = /* GraphQL */ `
         seoUrl
         seoRobots
         seoFollow
+        wired
+        wiredLessonId
         createdAt
         updatedAt
         lessonAnalysisId
@@ -9831,6 +10004,8 @@ export const onUpdateUserCompletedLessons = /* GraphQL */ `
         seoUrl
         seoRobots
         seoFollow
+        wired
+        wiredLessonId
         createdAt
         updatedAt
         lessonAnalysisId
@@ -9925,6 +10100,8 @@ export const onDeleteUserCompletedLessons = /* GraphQL */ `
         seoUrl
         seoRobots
         seoFollow
+        wired
+        wiredLessonId
         createdAt
         updatedAt
         lessonAnalysisId
@@ -10019,6 +10196,8 @@ export const onCreateLessonGlossaryTerms = /* GraphQL */ `
         seoUrl
         seoRobots
         seoFollow
+        wired
+        wiredLessonId
         createdAt
         updatedAt
         lessonAnalysisId
@@ -10084,6 +10263,8 @@ export const onUpdateLessonGlossaryTerms = /* GraphQL */ `
         seoUrl
         seoRobots
         seoFollow
+        wired
+        wiredLessonId
         createdAt
         updatedAt
         lessonAnalysisId
@@ -10149,6 +10330,8 @@ export const onDeleteLessonGlossaryTerms = /* GraphQL */ `
         seoUrl
         seoRobots
         seoFollow
+        wired
+        wiredLessonId
         createdAt
         updatedAt
         lessonAnalysisId

@@ -88,8 +88,8 @@ export default function Header() {
   }
 
   return (
-    <header className="w-full border-b border-brand-gray bg-white">
-      <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6">
+    <header className="w-full bg-white">
+      <div className="mx-auto w-full max-w-[1200px]">
         <div className="flex items-center gap-6 py-4">
           <Link href="/" className="flex items-center gap-2 shrink-0" aria-label="Home">
             <Logo className="h-10 w-10" />
@@ -128,7 +128,7 @@ export default function Header() {
                   >
                     <Link
                       href={item.href}
-                      className="inline-flex items-center gap-1.5 py-0 text-[17px] font-semibold leading-tight text-neutral-900 hover:text-brand-blue"
+                      className="inline-flex items-center gap-1.5 py-0 text-[17px] font-medium leading-tight text-neutral-900 hover:text-brand-blue"
                     >
                       {item.label}
                       {hasChildren && <Caret className="mt-0.5 opacity-70" />}
@@ -139,7 +139,7 @@ export default function Header() {
                           <Link
                             key={child.href}
                             href={child.href}
-                            className="block px-4 py-2 text-[17px] font-semibold text-neutral-900 hover:bg-brand-gray/40 hover:text-brand-blue"
+                            className="block px-4 py-2 text-[15px] font-medium text-neutral-900 hover:bg-brand-gray/40 hover:text-brand-blue"
                           >
                             {child.label}
                           </Link>
@@ -195,7 +195,7 @@ export default function Header() {
           aria-label="Mobile"
           className="lg:hidden border-t border-brand-gray bg-white"
         >
-          <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 py-2">
+          <div className="mx-auto w-full max-w-[1200px] py-2">
             <div className="border-b border-brand-gray/70 pb-2 mb-1">
               {isLoggedIn ? (
                 <button

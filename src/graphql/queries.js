@@ -425,6 +425,14 @@ export const getLesson = /* GraphQL */ `
         nextToken
         __typename
       }
+      wired
+      wiredQuestions {
+        question
+        options
+        correctAnswer
+        __typename
+      }
+      wiredLessonId
       createdAt
       updatedAt
       lessonAnalysisId
@@ -471,6 +479,8 @@ export const listLessons = /* GraphQL */ `
         seoUrl
         seoRobots
         seoFollow
+        wired
+        wiredLessonId
         createdAt
         updatedAt
         lessonAnalysisId
@@ -1021,6 +1031,7 @@ export const getUser = /* GraphQL */ `
         paymentConfirmation
         contactConsent
         status
+        videoLink
         createdOn
         updatedOn
         icpfCmpmFormUserId
@@ -1459,6 +1470,108 @@ export const listLearningPathProgresses = /* GraphQL */ `
     }
   }
 `;
+export const getBoosterCourseProgress = /* GraphQL */ `
+  query GetBoosterCourseProgress($id: ID!) {
+    getBoosterCourseProgress(id: $id) {
+      id
+      userId
+      userEmail
+      thinkificCourseId
+      courseTitle
+      completedLessonIds
+      completedLessonTitles
+      totalLessonCount
+      percentComplete
+      milestonesIssued
+      lastCompletedLessonId
+      lastCompletedLessonTitle
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const listBoosterCourseProgresses = /* GraphQL */ `
+  query ListBoosterCourseProgresses(
+    $filter: ModelBoosterCourseProgressFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    listBoosterCourseProgresses(
+      filter: $filter
+      limit: $limit
+      nextToken: $nextToken
+    ) {
+      items {
+        id
+        userId
+        userEmail
+        thinkificCourseId
+        courseTitle
+        completedLessonIds
+        completedLessonTitles
+        totalLessonCount
+        percentComplete
+        milestonesIssued
+        lastCompletedLessonId
+        lastCompletedLessonTitle
+        createdAt
+        updatedAt
+        __typename
+      }
+      nextToken
+      __typename
+    }
+  }
+`;
+export const getBoosterDiscountCode = /* GraphQL */ `
+  query GetBoosterDiscountCode($id: ID!) {
+    getBoosterDiscountCode(id: $id) {
+      id
+      userId
+      userEmail
+      thinkificCourseId
+      milestonePercent
+      code
+      issuedAt
+      redeemedAt
+      isRedeemed
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const listBoosterDiscountCodes = /* GraphQL */ `
+  query ListBoosterDiscountCodes(
+    $filter: ModelBoosterDiscountCodeFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    listBoosterDiscountCodes(
+      filter: $filter
+      limit: $limit
+      nextToken: $nextToken
+    ) {
+      items {
+        id
+        userId
+        userEmail
+        thinkificCourseId
+        milestonePercent
+        code
+        issuedAt
+        redeemedAt
+        isRedeemed
+        createdAt
+        updatedAt
+        __typename
+      }
+      nextToken
+      __typename
+    }
+  }
+`;
 export const getLearningPathCourse = /* GraphQL */ `
   query GetLearningPathCourse($id: ID!) {
     getLearningPathCourse(id: $id) {
@@ -1588,6 +1701,8 @@ export const getLearningPathLesson = /* GraphQL */ `
         seoUrl
         seoRobots
         seoFollow
+        wired
+        wiredLessonId
         createdAt
         updatedAt
         lessonAnalysisId
@@ -1889,6 +2004,7 @@ export const getIcpfCmpmForm = /* GraphQL */ `
       paymentConfirmation
       contactConsent
       status
+      videoLink
       createdOn
       updatedOn
       icpfCmpmFormUserId
@@ -1944,6 +2060,7 @@ export const listIcpfCmpmForms = /* GraphQL */ `
         paymentConfirmation
         contactConsent
         status
+        videoLink
         createdOn
         updatedOn
         icpfCmpmFormUserId
@@ -5504,6 +5621,8 @@ export const getLessonTags = /* GraphQL */ `
         seoUrl
         seoRobots
         seoFollow
+        wired
+        wiredLessonId
         createdAt
         updatedAt
         lessonAnalysisId
@@ -5789,6 +5908,8 @@ export const getUserCompletedLessons = /* GraphQL */ `
         seoUrl
         seoRobots
         seoFollow
+        wired
+        wiredLessonId
         createdAt
         updatedAt
         lessonAnalysisId
@@ -5905,6 +6026,8 @@ export const getLessonGlossaryTerms = /* GraphQL */ `
         seoUrl
         seoRobots
         seoFollow
+        wired
+        wiredLessonId
         createdAt
         updatedAt
         lessonAnalysisId
@@ -7266,6 +7389,8 @@ export const lessonsBySlug = /* GraphQL */ `
         seoUrl
         seoRobots
         seoFollow
+        wired
+        wiredLessonId
         createdAt
         updatedAt
         lessonAnalysisId
@@ -7625,6 +7750,219 @@ export const learningPathsBySlug = /* GraphQL */ `
         status
         icon
         accredibleId
+        createdAt
+        updatedAt
+        __typename
+      }
+      nextToken
+      __typename
+    }
+  }
+`;
+export const boosterProgressByUser = /* GraphQL */ `
+  query BoosterProgressByUser(
+    $userId: ID!
+    $sortDirection: ModelSortDirection
+    $filter: ModelBoosterCourseProgressFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    boosterProgressByUser(
+      userId: $userId
+      sortDirection: $sortDirection
+      filter: $filter
+      limit: $limit
+      nextToken: $nextToken
+    ) {
+      items {
+        id
+        userId
+        userEmail
+        thinkificCourseId
+        courseTitle
+        completedLessonIds
+        completedLessonTitles
+        totalLessonCount
+        percentComplete
+        milestonesIssued
+        lastCompletedLessonId
+        lastCompletedLessonTitle
+        createdAt
+        updatedAt
+        __typename
+      }
+      nextToken
+      __typename
+    }
+  }
+`;
+export const boosterProgressByUserEmail = /* GraphQL */ `
+  query BoosterProgressByUserEmail(
+    $userEmail: String!
+    $sortDirection: ModelSortDirection
+    $filter: ModelBoosterCourseProgressFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    boosterProgressByUserEmail(
+      userEmail: $userEmail
+      sortDirection: $sortDirection
+      filter: $filter
+      limit: $limit
+      nextToken: $nextToken
+    ) {
+      items {
+        id
+        userId
+        userEmail
+        thinkificCourseId
+        courseTitle
+        completedLessonIds
+        completedLessonTitles
+        totalLessonCount
+        percentComplete
+        milestonesIssued
+        lastCompletedLessonId
+        lastCompletedLessonTitle
+        createdAt
+        updatedAt
+        __typename
+      }
+      nextToken
+      __typename
+    }
+  }
+`;
+export const boosterProgressByCourse = /* GraphQL */ `
+  query BoosterProgressByCourse(
+    $thinkificCourseId: String!
+    $sortDirection: ModelSortDirection
+    $filter: ModelBoosterCourseProgressFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    boosterProgressByCourse(
+      thinkificCourseId: $thinkificCourseId
+      sortDirection: $sortDirection
+      filter: $filter
+      limit: $limit
+      nextToken: $nextToken
+    ) {
+      items {
+        id
+        userId
+        userEmail
+        thinkificCourseId
+        courseTitle
+        completedLessonIds
+        completedLessonTitles
+        totalLessonCount
+        percentComplete
+        milestonesIssued
+        lastCompletedLessonId
+        lastCompletedLessonTitle
+        createdAt
+        updatedAt
+        __typename
+      }
+      nextToken
+      __typename
+    }
+  }
+`;
+export const boosterCodesByUser = /* GraphQL */ `
+  query BoosterCodesByUser(
+    $userId: ID!
+    $sortDirection: ModelSortDirection
+    $filter: ModelBoosterDiscountCodeFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    boosterCodesByUser(
+      userId: $userId
+      sortDirection: $sortDirection
+      filter: $filter
+      limit: $limit
+      nextToken: $nextToken
+    ) {
+      items {
+        id
+        userId
+        userEmail
+        thinkificCourseId
+        milestonePercent
+        code
+        issuedAt
+        redeemedAt
+        isRedeemed
+        createdAt
+        updatedAt
+        __typename
+      }
+      nextToken
+      __typename
+    }
+  }
+`;
+export const boosterCodesByUserEmail = /* GraphQL */ `
+  query BoosterCodesByUserEmail(
+    $userEmail: String!
+    $sortDirection: ModelSortDirection
+    $filter: ModelBoosterDiscountCodeFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    boosterCodesByUserEmail(
+      userEmail: $userEmail
+      sortDirection: $sortDirection
+      filter: $filter
+      limit: $limit
+      nextToken: $nextToken
+    ) {
+      items {
+        id
+        userId
+        userEmail
+        thinkificCourseId
+        milestonePercent
+        code
+        issuedAt
+        redeemedAt
+        isRedeemed
+        createdAt
+        updatedAt
+        __typename
+      }
+      nextToken
+      __typename
+    }
+  }
+`;
+export const boosterCodesByCourse = /* GraphQL */ `
+  query BoosterCodesByCourse(
+    $thinkificCourseId: String!
+    $sortDirection: ModelSortDirection
+    $filter: ModelBoosterDiscountCodeFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    boosterCodesByCourse(
+      thinkificCourseId: $thinkificCourseId
+      sortDirection: $sortDirection
+      filter: $filter
+      limit: $limit
+      nextToken: $nextToken
+    ) {
+      items {
+        id
+        userId
+        userEmail
+        thinkificCourseId
+        milestonePercent
+        code
+        issuedAt
+        redeemedAt
+        isRedeemed
         createdAt
         updatedAt
         __typename

@@ -70,7 +70,7 @@ const SOCIALS = [
 export default function Footer() {
   return (
     <footer className="w-full bg-footer-bg text-footer-fg">
-      <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 py-12 lg:py-16">
+      <div className="mx-auto w-full max-w-[1200px] py-12 lg:py-16">
         <div className="pl-12">
           {/* Top row: "Navigate" on the left, Member Login on the right */}
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between md:gap-6">

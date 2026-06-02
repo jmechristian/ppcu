@@ -20,8 +20,8 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={`${montserrat.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col font-sans">
+    <html lang="en" className={`${montserrat.variable} h-full`}>
+      <body className="min-h-full flex flex-col">
         <GrowthzoneProfileProvider>{children}</GrowthzoneProfileProvider>
       </body>
     </html>
