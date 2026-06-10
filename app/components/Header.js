@@ -2,38 +2,111 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { FaBook, FaCog, FaHome, FaInfoCircle, FaShoppingCart } from "react-icons/fa";
 import Logo from "./Logo";
 import { useGrowthzoneProfile } from "../providers/GrowthzoneProfileContext";
 
 const NAV_ITEMS = [
   {
     label: "The Industry Voice",
-    href: "/industry-voice",
+    href: "https://paperbox.org/industry-voice/",
+    external: true,
     children: [
-      { label: "News", href: "/industry-voice/news" },
-      { label: "Publications", href: "/industry-voice/publications" },
+      { label: "Blog", href: "https://paperbox.org/industry-voice/", external: true },
+      {
+        label: "Submit Content",
+        href: "https://paperbox.org/amplify-your-brand/",
+        external: true,
+      },
     ],
   },
   {
     label: "Programs",
-    href: "/programs",
+    href: "https://paperbox.org/programs/",
+    external: true,
     children: [
-      { label: "Sustainability", href: "/programs/sustainability" },
-      { label: "Safety", href: "/programs/safety" },
+      {
+        label: "Paperboard Packaging Competition",
+        href: "https://paperbox.org/programs/carton-competition/",
+        external: true,
+      },
+      {
+        label: "Industry Benchmarking",
+        href: "https://paperbox.org/programs/benchmarking/",
+        external: true,
+      },
+      {
+        label: "Industry Affairs",
+        href: "https://paperbox.org/industry-affairs/",
+        external: true,
+      },
+      {
+        label: "Buy PPC",
+        href: "https://members.paperbox.org/buyppcdirectory/FindStartsWith?term=%23%21",
+        external: true,
+      },
+      { label: "PPCU", href: "/" },
+      { label: "TICCIT", href: "https://paperbox.org/programs/ticcit/", external: true },
+      {
+        label: "Sponsorship",
+        href: "https://paperbox.org/programs/sponsorship/",
+        external: true,
+      },
+      { label: "Film Fest", href: "https://paperbox.org/programs/filmfest/", external: true },
+      { label: "Awards", href: "https://paperbox.org/programs/awards/", external: true },
+      {
+        label: "Merchandise",
+        href: "https://paperbox.org/programs/ideasandinnovation/",
+        external: true,
+      },
     ],
   },
-  { label: "Events", href: "/events" },
+  { label: "Events", href: "https://paperbox.org/events/", external: true },
   {
     label: "About",
-    href: "/about",
+    href: "https://paperbox.org/about/",
+    external: true,
     children: [
-      { label: "Our Mission", href: "/about/mission" },
-      { label: "Leadership", href: "/about/leadership" },
+      { label: "Why join?", href: "https://paperbox.org/become-a-member/", external: true },
+      {
+        label: "Member Portal",
+        href: "https://paperboardpackagingcouncil.growthzoneapp.com/MIC/login",
+        external: true,
+      },
+      { label: "Help Desk", href: "https://paperbox.org/helpdesk/", external: true },
     ],
   },
-  { label: "PPC University", href: "/ppc-university" },
+  { label: "PPC University", href: "/" },
 ];
+
+const MOBILE_SIDEBAR_ITEMS = [
+  { key: "home", label: "Home", href: "/", icon: FaHome },
+  { key: "getting-started", label: "Getting Started", href: "/getting-started", icon: FaInfoCircle },
+  {
+    key: "catalog",
+    label: "Folding Carton Essentials",
+    href: "/catalog",
+    icon: FaBook,
+  },
+  { key: "cart", label: "Cart (0 items)", href: "/cart", icon: FaShoppingCart },
+];
+
+function NavItemLink({ item, className, children, onClick }) {
+  if (item.external) {
+    return (
+      <a href={item.href} className={className} onClick={onClick}>
+        {children}
+      </a>
+    );
+  }
+
+  return (
+    <Link href={item.href} className={className} onClick={onClick}>
+      {children}
+    </Link>
+  );
+}
 
 function Caret({ className = "" }) {
   return (
@@ -65,11 +138,19 @@ function SearchIcon({ className = "" }) {
 }
 
 export default function Header() {
+  const pathname = usePathname();
   const router = useRouter();
   const { profile, refreshProfile } = useGrowthzoneProfile();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openIdx, setOpenIdx] = useState(null);
   const isLoggedIn = profile.status === "ready";
+  const isPrimaryContact = /primary/i.test(profile.type || "");
+  const mobileItems = isPrimaryContact
+    ? [
+        ...MOBILE_SIDEBAR_ITEMS,
+        { key: "admin", label: "Admin", href: "/admin", icon: FaCog },
+      ]
+    : MOBILE_SIDEBAR_ITEMS;
 
   async function handleLogout() {
     try {
@@ -89,7 +170,7 @@ export default function Header() {
 
   return (
     <header className="w-full bg-white">
-      <div className="mx-auto w-full max-w-[1200px]">
+      <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-0">
         <div className="flex items-center gap-6 py-4">
           <Link href="/" className="flex items-center gap-2 shrink-0" aria-label="Home">
             <Logo className="h-10 w-10" />
@@ -119,6 +200,7 @@ export default function Header() {
             <nav className="flex items-center gap-7 -mt-0.5" aria-label="Primary">
               {NAV_ITEMS.map((item, idx) => {
                 const hasChildren = Array.isArray(item.children) && item.children.length > 0;
+                const isOpen = openIdx === idx;
                 return (
                   <div
                     key={item.label}
@@ -126,23 +208,27 @@ export default function Header() {
                     onMouseEnter={() => hasChildren && setOpenIdx(idx)}
                     onMouseLeave={() => hasChildren && setOpenIdx(null)}
                   >
-                    <Link
-                      href={item.href}
-                      className="inline-flex items-center gap-1.5 py-0 text-[17px] font-medium leading-tight text-neutral-900 hover:text-brand-blue"
+                    <NavItemLink
+                      item={item}
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[17px] leading-tight font-medium transition-colors ${
+                        isOpen && hasChildren
+                          ? "rounded-t-[4px] bg-[#242224] text-brand-green"
+                          : "text-neutral-900 hover:text-brand-blue"
+                      }`}
                     >
                       {item.label}
-                      {hasChildren && <Caret className="mt-0.5 opacity-70" />}
-                    </Link>
-                    {hasChildren && openIdx === idx && (
-                      <div className="absolute left-0 top-full z-20 min-w-[220px] border border-brand-gray bg-white py-2 shadow-lg">
+                      {hasChildren && <Caret className="mt-0.5 opacity-80" />}
+                    </NavItemLink>
+                    {hasChildren && isOpen && (
+                      <div className="absolute left-0 top-full z-20 min-w-[168px] overflow-hidden rounded-b-[6px] border border-[#383838] bg-[#242224] shadow-xl">
                         {item.children.map((child) => (
-                          <Link
+                          <NavItemLink
+                            item={child}
                             key={child.href}
-                            href={child.href}
-                            className="block px-4 py-2 text-[15px] font-medium text-neutral-900 hover:bg-brand-gray/40 hover:text-brand-blue"
+                            className="block border-t border-dashed border-[#6c6b6c] px-3 py-2.5 text-[16px] font-medium leading-[1.1] text-white hover:bg-[#2b292b] first:border-t-0"
                           >
                             {child.label}
-                          </Link>
+                          </NavItemLink>
                         ))}
                       </div>
                     )}
@@ -191,55 +277,53 @@ export default function Header() {
 
       {/* Mobile menu panel */}
       {mobileOpen && (
-        <nav
-          aria-label="Mobile"
-          className="lg:hidden border-t border-brand-gray bg-white"
-        >
-          <div className="mx-auto w-full max-w-[1200px] py-2">
-            <div className="border-b border-brand-gray/70 pb-2 mb-1">
+        <nav aria-label="Mobile sidebar menu" className="lg:hidden bg-[#242224]">
+          <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-0 py-3">
+            <ul className="space-y-1.5">
+              {mobileItems.map((item) => {
+                const Icon = item.icon;
+                const isActive =
+                  item.href === "/"
+                    ? pathname === "/"
+                    : pathname === item.href || pathname?.startsWith(`${item.href}/`);
+
+                return (
+                  <li key={item.key}>
+                    <Link
+                      href={item.href}
+                      onClick={() => setMobileOpen(false)}
+                      className={`flex items-center gap-3 rounded px-5 py-2.5 text-[17px] font-medium transition ${
+                        isActive
+                          ? "bg-brand-green text-white"
+                          : "text-white hover:bg-white/10"
+                      }`}
+                    >
+                      <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
+                      <span>{item.label}</span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+            <div className="mt-4 rounded-md bg-[#cfd0d3] px-3 py-3">
               {isLoggedIn ? (
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="block py-2 text-[15px] font-medium text-neutral-800 hover:text-brand-blue"
+                  className="mx-auto block bg-brand-green px-6 py-1.5 text-xs font-bold uppercase tracking-[0.12em] text-white"
                 >
                   Log Out
                 </button>
               ) : (
                 <Link
                   href="/login"
-                  className="block py-2 text-[15px] font-medium text-neutral-800 hover:text-brand-blue"
+                  className="mx-auto block w-fit bg-brand-green px-6 py-1.5 text-xs font-bold uppercase tracking-[0.12em] text-white"
                   onClick={() => setMobileOpen(false)}
                 >
                   Log In
                 </Link>
               )}
             </div>
-            {NAV_ITEMS.map((item) => (
-              <div key={item.label} className="border-b border-brand-gray/70 last:border-b-0">
-                <Link
-                  href={item.href}
-                  className="block py-3 text-[15px] font-medium text-neutral-800 hover:text-brand-blue"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  {item.label}
-                </Link>
-                {item.children?.length > 0 && (
-                  <div className="pb-3 pl-4">
-                    {item.children.map((child) => (
-                      <Link
-                        key={child.href}
-                        href={child.href}
-                        className="block py-1.5 text-sm text-neutral-600 hover:text-brand-blue"
-                        onClick={() => setMobileOpen(false)}
-                      >
-                        {child.label}
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
           </div>
         </nav>
       )}

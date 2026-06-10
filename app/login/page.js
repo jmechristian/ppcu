@@ -9,6 +9,7 @@ function LoginContent() {
   const searchParams = useSearchParams();
   const [submitting, setSubmitting] = useState(true);
   const [statusMessage, setStatusMessage] = useState("");
+  const oauthStartUrl = "/api/growthzone/oauth/start?returnTo=/";
 
   const oauthError = useMemo(() => {
     const oauth = searchParams.get("oauth");
@@ -23,10 +24,12 @@ function LoginContent() {
     return "An unexpected OAuth error occurred. Please try again.";
   }, [searchParams]);
 
-  const startOAuthLogin = () => {
-    setSubmitting(true);
-    setStatusMessage("Redirecting to secure sign-in...");
-    window.location.assign("/api/growthzone/oauth/start?returnTo=/");
+  const startOAuthLogin = (fromUserClick = false) => {
+    if (fromUserClick) {
+      setSubmitting(true);
+      setStatusMessage("Redirecting to secure sign-in...");
+    }
+    window.location.assign(oauthStartUrl);
   };
 
   useEffect(() => {
@@ -50,7 +53,9 @@ function LoginContent() {
             setStatusMessage("");
             return;
           }
-          startOAuthLogin();
+          // Auto-start OAuth without setState writes right before navigation.
+          window.location.assign(oauthStartUrl);
+          return;
         }
       } catch {
         if (!cancelled) {
@@ -62,7 +67,7 @@ function LoginContent() {
     return () => {
       cancelled = true;
     };
-  }, [oauthError, router]);
+  }, [oauthError, oauthStartUrl, router]);
 
   return (
     <div className="min-h-screen flex flex-col bg-[#f2f2f2]">
@@ -113,7 +118,7 @@ function LoginContent() {
                 <button
                   type="button"
                   disabled={submitting}
-                  onClick={startOAuthLogin}
+                  onClick={() => startOAuthLogin(true)}
                   className="mt-4 w-full h-10 bg-brand-green text-white text-[14px] font-medium hover:brightness-110 transition cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
                 >
                   {submitting ? "Redirecting..." : "Continue to Login"}
