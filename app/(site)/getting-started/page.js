@@ -126,8 +126,11 @@ export default function GettingStartedPage() {
               </p>
               <p>
                 Log in to your PPC member account through GrowthZone. Once
-                logged in, you’ll see a link to PPC University (PPCU) in your
-                member dashboard, which will bring you into the LMS platform.
+                logged in, you’ll see a link to Paperboard Packaging Council
+                University (PPCU) in your member dashboard. Clicking this link
+                will take you to Packaging School’s LMS platform, our learning
+                management system partner, where you can access your courses and
+                training materials.
               </p>
               <p>
                 <strong>
@@ -191,9 +194,11 @@ export default function GettingStartedPage() {
               </p>
               <p>
                 Log in to your PPC member account through GrowthZone. Once
-                logged in, you’ll see a link to PPC University (PPCU) in your
-                member dashboard, which will bring you into the PPCU platform.
-                You can also directly access the platform here.
+                logged in, you’ll see a link to Paperboard Packaging Council
+                University (PPCU) in your member dashboard. Clicking this link
+                will take you to Packaging School’s LMS platform, our learning
+                management system partner, where you can access your courses and
+                training materials.
               </p>
               <p>
                 <strong>
@@ -245,10 +250,10 @@ export default function GettingStartedPage() {
                 <strong>Who do I contact for technical issues?</strong>
               </p>
               <p>
-                For login or membership issues, contact PPC staff at
-                janice@paperbox.org For platform-specific problems (video
-                playback, course loading), use the “Help” or “Support” button
-                within the PPCU platform.
+                For membership issues, contact PPC staff at janice@paperbox.org.
+                For platform-specific problems (video playback, course loading
+                or login issues), contact Packaging School staff at
+                info@packagingschool.com
               </p>
             </div>
           </div>
