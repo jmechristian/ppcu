@@ -11,6 +11,11 @@ const montserrat = Montserrat({
 export const metadata = {
   title: "Paperboard Packaging Council",
   description: "The trade association for the North American paperboard packaging industry.",
+  icons: {
+    icon: "/logo.svg",
+    shortcut: "/logo.svg",
+    apple: "/logo.svg",
+  },
 };
 
 export const viewport = {
