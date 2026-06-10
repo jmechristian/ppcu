@@ -27,53 +27,88 @@ export default function GettingStartedPage() {
             Folding Carton Essentials
           </h2>
           <p className='text-gray-700 leading-snug max-w-3xl'>
-            Folding Carton Essentials runs over 20 workdays, with an investment
-            of less than 20 minutes per day. With eight hours of educational
-            content, activities, and cheat sheets, you'll exit with a solid
-            foundation in packaging basics. Departments such as marketing,
-            sales, procurement, legal, distribution, quality control,
-            manufacturing and warehousing all have unique demands on the
-            packaging. After taking this course, you will have the thought
-            process required of a successful stakeholder in the packaging
-            development process.
+            Folding Carton Essentials provides a comprehensive introduction to
+            the materials, processes, and technologies used to manufacture
+            folding cartons. Through a series of self-paced lessons,
+            participants follow the complete lifecycle of a folding carton—from
+            paperboard production and recovered fiber systems to printing,
+            converting, finishing, and final package assembly.
+          </p>
+          <p className='text-gray-700 leading-snug max-w-3xl'>
+            Designed for professionals both inside and outside of manufacturing,
+            this course builds a practical understanding of how folding cartons
+            are made and the terminology, equipment, and decision-making
+            involved throughout the process. Participants will explore topics
+            including virgin and recycled paperboard, sustainability, color
+            theory, inks and coatings, adhesives, tooling, die-cutting,
+            laminating, window patching, microflute applications, rigid boxes,
+            printing technologies, and emerging industry innovations.
+          </p>
+          <p className='text-gray-700 leading-snug max-w-3xl'>
+            Whether you work in operations, sales, customer service, marketing,
+            design, procurement, quality, or leadership, understanding the
+            folding carton manufacturing process provides valuable context for
+            collaborating with customers, suppliers, and production teams. By
+            the end of the course, participants will have a strong foundation in
+            the technical concepts and industry language that drive the
+            paperboard packaging industry.
           </p>
           <div className='w-full flex flex-col gap-2'>
             <h3 className='text-xl font-semibold w-full'>Course Objectives</h3>
+            <p className='text-gray-700 leading-snug max-w-3xl'>
+              Upon completion of this course, participants will be able to:
+            </p>
             <ul className='list-disc space-y-1 pl-5 text-gray-700 max-w-3xl'>
-              <li>Define packaging by its functions, levels and types.</li>
               <li>
-                Explain the role of packaging in society by listing major
-                packaging innovations throughout recorded history.
+                Explain the complete folding carton manufacturing process from
+                paperboard production through finished packaging.
               </li>
               <li>
-                Describe the global packaging market. Identify the major
-                stakeholders who are influential to the packaging development
-                process.
+                Identify the characteristics and applications of virgin fiber,
+                recycled fiber, and recovered fiber systems.
               </li>
               <li>
-                Understand the career potential in packaging by identifying
-                specific jobs.
+                Understand the role of sustainability in paperboard packaging
+                and how materials and manufacturing processes contribute to
+                environmental performance.
               </li>
               <li>
-                Understand key phases of the packaging development process.
+                Recognize the major paperboard grades and determine appropriate
+                applications for each.
               </li>
               <li>
-                Understand how the actual product can impact its packaging.
+                Describe the fundamentals of printing technologies used in
+                folding carton production.
               </li>
               <li>
-                Understand the basic manufacturing process for each fundamental
-                packaging material.
+                Understand the principles of color theory, color management, and
+                print quality.
               </li>
               <li>
-                Understand how sustainability can be impacted various packaging
-                materials and processes.
+                Identify common coatings, laminates, and finishing techniques
+                and their impact on package performance and appearance.
               </li>
-              <li>Identify the fundamental packaging materials and types.</li>
               <li>
-                Understand how innovative design can enhance finished packaging
-                structures.
+                Explain the purpose and function of adhesives used throughout
+                the converting process.
               </li>
-              <li>Learn the language of packaging.</li>
+              <li>
+                Understand the role of tooling, die-cutting, creasing, and other
+                converting operations.
+              </li>
+              <li>
+                Describe specialty applications including window patching,
+                microflute packaging, and rigid box construction.
+              </li>
+              <li>
+                Interpret common folding carton terminology and communicate more
+                effectively with industry professionals.
+              </li>
+              <li>
+                Recognize how various departments—including sales, customer
+                service, design, marketing, procurement, and operations—interact
+                with and support the folding carton manufacturing process.
+              </li>
             </ul>
           </div>
         </section>
@@ -92,8 +127,7 @@ export default function GettingStartedPage() {
               <p>
                 Log in to your PPC member account through GrowthZone. Once
                 logged in, you’ll see a link to PPC University (PPCU) in your
-                member dashboard, which will bring you into the Elevate LMS
-                platform.
+                member dashboard, which will bring you into the LMS platform.
               </p>
               <p>
                 <strong>
