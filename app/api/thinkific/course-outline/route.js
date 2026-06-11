@@ -2,49 +2,55 @@ import { NextResponse } from "next/server";
 
 const GRAPHQL_URL =
   process.env.THINKIFIC_GRAPHQL_URL || "https://api.thinkific.com/stable/graphql";
-const COURSE_OUTLINE_CACHE_TTL_MS = 1000 * 60 * 15;
-const courseOutlineCache = new Map();
+const OUTLINE_CACHE_TTL_MS = 1000 * 60 * 15;
+const outlineCache = new Map();
 
-const COURSE_OUTLINE_QUERY = `
-  query Course($courseId: ID!, $first: Int, $lessonsFirst: Int) {
-    course(id: $courseId) {
-      id
-      description
+const OUTLINE_QUERY = `
+  query Bundle($bundleId: ID!, $first: Int, $chaptersFirst: Int) {
+    bundle(id: $bundleId) {
+      cardImage {
+        url
+      }
       name
-      title
-      instructor {
-        fullName
-        bio
-        title
-      }
-      curriculum {
-        chaptersCount
-        lessonsCount
-        totalVideoContentTime
-        chapters(first: $first) {
-          edges {
-            node {
-              id
-              title
-              position
-              lessons(first: $lessonsFirst) {
-                edges {
-                  node {
-                    id
-                    title
-                    lessonType
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
       product {
         cardImageUrl
         checkoutUrl
+        description
+        id
+        name
         primaryPrice {
+          amount
+          currency
           displayPrice
+        }
+        resumeUrl
+      }
+      items(first: $first) {
+        nodes {
+          ... on Course {
+            id
+            cardImage {
+              url
+            }
+            curriculum {
+              chapters(first: $chaptersFirst) {
+                nodes {
+                  title
+                  position
+                  id
+                }
+              }
+              chaptersCount
+              lessonsCount
+              totalVideoContentTime
+            }
+            description
+            instructor {
+              fullName
+            }
+            name
+            title
+          }
         }
       }
     }
@@ -62,7 +68,7 @@ function isRateLimited(response, json) {
   return errors.some((err) => String(err?.message || "").includes("429"));
 }
 
-async function fetchCourseOutlineWithRetry(query, variables, apiKey) {
+async function fetchOutlineWithRetry(query, variables, apiKey) {
   let lastResponse;
   let lastJson = {};
   const backoffMs = [200, 500, 1000];
@@ -94,46 +100,62 @@ async function fetchCourseOutlineWithRetry(query, variables, apiKey) {
   return { response: lastResponse, json: lastJson };
 }
 
-function normalizeCourse(rawCourse) {
-  const chapters =
-    rawCourse?.curriculum?.chapters?.edges
-      ?.map((edge) => edge?.node)
-      .filter(Boolean)
-      .sort((a, b) => (a?.position ?? 0) - (b?.position ?? 0))
-      .map((chapter) => ({
-        id: chapter.id,
-        title: chapter.title,
-        position: chapter.position,
-        lessons:
-          chapter.lessons?.edges
-            ?.map((lessonEdge) => lessonEdge?.node)
-            .filter(Boolean)
-            .map((lesson) => ({
-              id: lesson.id,
-              title: lesson.title,
-              lessonType: lesson.lessonType,
-            })) || [],
-      })) || [];
+function normalizeBundle(rawBundle) {
+  const courses =
+    rawBundle?.items?.nodes
+      ?.filter(Boolean)
+      .map((course, index) => {
+        const chapters =
+          course?.curriculum?.chapters?.nodes
+            ?.filter(Boolean)
+            .sort((a, b) => (a?.position ?? 0) - (b?.position ?? 0))
+            .map((chapter) => ({
+              id: chapter.id,
+              title: chapter.title,
+              position: chapter.position,
+            })) || [];
+
+        return {
+          id: course?.id || `${course?.title || course?.name || "course"}-${index}`,
+          title: course?.title || course?.name || `Course ${index + 1}`,
+          description: course?.description || "",
+          instructor: {
+            fullName: course?.instructor?.fullName || "",
+          },
+          cardImageUrl: course?.cardImage?.url || "",
+          curriculum: {
+            chaptersCount: course?.curriculum?.chaptersCount ?? chapters.length,
+            lessonsCount: course?.curriculum?.lessonsCount ?? 0,
+            totalVideoContentTime: course?.curriculum?.totalVideoContentTime ?? 0,
+            chapters,
+          },
+        };
+      }) || [];
+
+  const totals = courses.reduce(
+    (acc, course) => {
+      acc.coursesCount += 1;
+      acc.chaptersCount += Number(course.curriculum?.chaptersCount || 0);
+      acc.lessonsCount += Number(course.curriculum?.lessonsCount || 0);
+      acc.totalVideoContentTime += Number(course.curriculum?.totalVideoContentTime || 0);
+      return acc;
+    },
+    { coursesCount: 0, chaptersCount: 0, lessonsCount: 0, totalVideoContentTime: 0 },
+  );
 
   return {
-    id: rawCourse?.id,
-    title: rawCourse?.title || rawCourse?.name || "Course",
-    description: rawCourse?.description || "",
-    instructor: {
-      fullName: rawCourse?.instructor?.fullName || "",
-      title: rawCourse?.instructor?.title || "",
-      bio: rawCourse?.instructor?.bio || "",
-    },
-    curriculum: {
-      chaptersCount: rawCourse?.curriculum?.chaptersCount ?? chapters.length,
-      lessonsCount: rawCourse?.curriculum?.lessonsCount ?? 0,
-      totalVideoContentTime: rawCourse?.curriculum?.totalVideoContentTime ?? null,
-      chapters,
-    },
+    id: rawBundle?.product?.id || rawBundle?.name || "bundle",
+    title: rawBundle?.name || rawBundle?.product?.name || "Program Bundle",
+    description: rawBundle?.product?.description || "",
+    courses,
+    totals,
     product: {
-      cardImageUrl: rawCourse?.product?.cardImageUrl || "",
-      checkoutUrl: rawCourse?.product?.checkoutUrl || "",
-      displayPrice: rawCourse?.product?.primaryPrice?.displayPrice || "",
+      cardImageUrl: rawBundle?.product?.cardImageUrl || rawBundle?.cardImage?.url || "",
+      checkoutUrl: rawBundle?.product?.checkoutUrl || "",
+      resumeUrl: rawBundle?.product?.resumeUrl || "",
+      displayPrice: rawBundle?.product?.primaryPrice?.displayPrice || "",
+      amount: rawBundle?.product?.primaryPrice?.amount ?? null,
+      currency: rawBundle?.product?.primaryPrice?.currency || "",
     },
   };
 }
@@ -141,18 +163,18 @@ function normalizeCourse(rawCourse) {
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const requestedId = searchParams.get("id");
-  const courseId =
+  const bundleId =
     requestedId?.trim() ||
-    process.env.THINKIFIC_COURSE_ID ||
-    process.env.NEXT_PUBLIC_THINKIFIC_COURSE_ID ||
-    "";
+    process.env.THINKIFIC_BUNDLE_ID ||
+    process.env.NEXT_PUBLIC_THINKIFIC_BUNDLE_ID ||
+    "424513";
 
-  if (!courseId) {
+  if (!bundleId) {
     return NextResponse.json(
       {
         message: "error",
         error:
-          "Missing Thinkific course id. Set THINKIFIC_COURSE_ID or pass ?id= in the request.",
+          "Missing Thinkific bundle id. Set THINKIFIC_BUNDLE_ID or pass ?id= in the request.",
       },
       { status: 400 },
     );
@@ -175,8 +197,8 @@ export async function GET(request) {
     );
   }
 
-  const cacheKey = String(courseId).trim();
-  const cached = courseOutlineCache.get(cacheKey);
+  const cacheKey = String(bundleId).trim();
+  const cached = outlineCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) {
     return NextResponse.json({
       message: "success",
@@ -187,13 +209,13 @@ export async function GET(request) {
 
   const variables = {
     first: 100,
-    lessonsFirst: 100,
-    courseId: cacheKey,
+    chaptersFirst: 100,
+    bundleId: cacheKey,
   };
 
   try {
-    const { response, json } = await fetchCourseOutlineWithRetry(
-      COURSE_OUTLINE_QUERY,
+    const { response, json } = await fetchOutlineWithRetry(
+      OUTLINE_QUERY,
       variables,
       apiKey,
     );
@@ -219,26 +241,26 @@ export async function GET(request) {
       );
     }
 
-    const rawCourse = json?.data?.course;
-    if (!rawCourse) {
+    const rawBundle = json?.data?.bundle;
+    if (!rawBundle) {
       return NextResponse.json(
         {
           message: "error",
-          error: "No course returned for the provided Thinkific course id.",
+          error: "No bundle returned for the provided Thinkific bundle id.",
         },
         { status: 404 },
       );
     }
 
-    const normalizedCourse = normalizeCourse(rawCourse);
-    courseOutlineCache.set(cacheKey, {
-      data: normalizedCourse,
-      expiresAt: Date.now() + COURSE_OUTLINE_CACHE_TTL_MS,
+    const normalizedBundle = normalizeBundle(rawBundle);
+    outlineCache.set(cacheKey, {
+      data: normalizedBundle,
+      expiresAt: Date.now() + OUTLINE_CACHE_TTL_MS,
     });
 
     return NextResponse.json({
       message: "success",
-      data: normalizedCourse,
+      data: normalizedBundle,
       fromCache: false,
     });
   } catch (error) {

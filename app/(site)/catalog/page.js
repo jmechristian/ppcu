@@ -1,34 +1,27 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import InteriorPageLayout from "../InteriorPageLayout";
+import { useGrowthzoneProfile } from "../../providers/GrowthzoneProfileContext";
 
 function stripHtml(value) {
   if (!value) return "";
   return String(value).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 }
 
-function formatDuration(value) {
-  if (value == null) return "Self-paced";
-  const numeric = Number(value);
-  if (!Number.isFinite(numeric) || numeric <= 0) return "Self-paced";
-  const hours = Math.floor(numeric / 3600);
-  const minutes = Math.floor((numeric % 3600) / 60);
-  if (hours && minutes) return `${hours}h ${minutes}m video`;
-  if (hours) return `${hours}h video`;
-  return `${minutes}m video`;
-}
-
 export default function CatalogPage() {
+  const { profile } = useGrowthzoneProfile();
+  const isLoggedIn = profile.status === "ready";
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [course, setCourse] = useState(null);
-  const [openChapterIds, setOpenChapterIds] = useState(() => new Set());
+  const [bundle, setBundle] = useState(null);
+  const [openCourseIds, setOpenCourseIds] = useState(() => new Set());
 
   useEffect(() => {
     let cancelled = false;
 
-    async function loadOutline() {
+    async function loadBundle() {
       try {
         setLoading(true);
         setError("");
@@ -44,40 +37,42 @@ export default function CatalogPage() {
         }
 
         if (cancelled) return;
-        const nextCourse = json?.data || null;
-        setCourse(nextCourse);
+        const nextBundle = json?.data || null;
+        setBundle(nextBundle);
 
-        const firstChapterId = nextCourse?.curriculum?.chapters?.[0]?.id;
-        setOpenChapterIds(firstChapterId ? new Set([firstChapterId]) : new Set());
+        const firstCourseId = nextBundle?.courses?.[0]?.id;
+        setOpenCourseIds(firstCourseId ? new Set([firstCourseId]) : new Set());
       } catch (err) {
         if (!cancelled) {
-          setError(err?.message || "Unable to load the course outline right now.");
+          setError(err?.message || "Unable to load the catalog outline right now.");
         }
       } finally {
         if (!cancelled) setLoading(false);
       }
     }
 
-    loadOutline();
+    loadBundle();
     return () => {
       cancelled = true;
     };
   }, []);
 
-  const chapters = useMemo(() => course?.curriculum?.chapters || [], [course]);
-  const description = useMemo(() => stripHtml(course?.description), [course?.description]);
-  const instructorLine = useMemo(
-    () => [course?.instructor?.fullName, course?.instructor?.title].filter(Boolean).join(" - "),
-    [course?.instructor?.fullName, course?.instructor?.title],
-  );
+  const courses = useMemo(() => bundle?.courses || [], [bundle]);
+  const description = useMemo(() => stripHtml(bundle?.description), [bundle?.description]);
+  const totals = bundle?.totals || {
+    coursesCount: courses.length,
+    chaptersCount: 0,
+    lessonsCount: 0,
+    totalVideoContentTime: 0,
+  };
 
-  function toggleChapter(chapterId) {
-    setOpenChapterIds((prev) => {
+  function toggleCourse(courseId) {
+    setOpenCourseIds((prev) => {
       const next = new Set(prev);
-      if (next.has(chapterId)) {
-        next.delete(chapterId);
+      if (next.has(courseId)) {
+        next.delete(courseId);
       } else {
-        next.add(chapterId);
+        next.add(courseId);
       }
       return next;
     });
@@ -99,64 +94,84 @@ export default function CatalogPage() {
           <div className="rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {error}
           </div>
-        ) : !course ? (
+        ) : !bundle ? (
           <div className="rounded border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700">
-            No course data was returned.
+            No bundle data was returned.
           </div>
         ) : (
           <div className="space-y-7">
             <header className="space-y-4">
-              <h1 className="text-3xl font-semibold leading-tight text-[#1f2a44]">
-                {course.title}
-              </h1>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h1 className="text-3xl font-semibold leading-tight text-[#1f2a44]">
+                  {bundle.title}
+                </h1>
+                {isLoggedIn && bundle.product?.checkoutUrl && (
+                  <a
+                    href={bundle.product.checkoutUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center rounded bg-brand-green px-5 py-2 text-[12px] font-semibold uppercase tracking-[0.08em] text-white hover:brightness-110"
+                  >
+                    Enroll
+                  </a>
+                )}
+                {!isLoggedIn && (
+                  <Link
+                    href="/login"
+                    className="inline-flex items-center rounded bg-brand-green px-5 py-2 text-[12px] font-semibold uppercase tracking-[0.08em] text-white hover:brightness-110"
+                  >
+                    Log In to Enroll
+                  </Link>
+                )}
+              </div>
               {description && (
                 <p className="max-w-4xl text-[15px] leading-relaxed text-gray-700">{description}</p>
               )}
               <div className="flex flex-wrap items-center gap-2 text-[13px] text-gray-700">
                 <span className="rounded-full bg-gray-100 px-3 py-1 font-medium">
-                  {course.curriculum?.chaptersCount || chapters.length} lessons
+                  {totals.coursesCount || courses.length} courses
                 </span>
                 <span className="rounded-full bg-gray-100 px-3 py-1 font-medium">
-                  {course.curriculum?.lessonsCount || 0} topics
+                  {totals.chaptersCount || 0} chapters
                 </span>
                 <span className="rounded-full bg-gray-100 px-3 py-1 font-medium">
-                  {formatDuration(course.curriculum?.totalVideoContentTime)}
+                  {totals.lessonsCount || 0} lessons
                 </span>
-                {course.product?.displayPrice && (
+                {bundle.product?.displayPrice && (
                   <span className="rounded-full bg-brand-green px-3 py-1 font-semibold text-white">
-                    {course.product.displayPrice}
+                    {bundle.product.displayPrice}
                   </span>
                 )}
               </div>
-              {instructorLine && (
-                <p className="text-sm text-gray-600">
-                  <span className="font-semibold text-gray-800">Instructor:</span> {instructorLine}
-                </p>
-              )}
             </header>
 
             <div className="overflow-hidden rounded-lg border border-gray-200">
               <div className="border-b border-gray-200 bg-[#f7f7f8] px-4 py-3">
-                <h2 className="text-[18px] font-semibold text-gray-900">Course Outline</h2>
+                <h2 className="text-[18px] font-semibold text-gray-900">Bundle Outline</h2>
               </div>
 
               <ul className="divide-y divide-gray-200">
-                {chapters.map((chapter, index) => {
-                  const isOpen = openChapterIds.has(chapter.id);
+                {courses.map((courseItem, index) => {
+                  const isOpen = openCourseIds.has(courseItem.id);
+                  const chapterCount = courseItem?.curriculum?.chaptersCount || 0;
+                  const lessonCount = courseItem?.curriculum?.lessonsCount || 0;
                   return (
-                    <li key={chapter.id || `${chapter.title}-${index}`} className="bg-white">
+                    <li key={courseItem.id || `${courseItem.title}-${index}`} className="bg-white">
                       <button
                         type="button"
-                        onClick={() => toggleChapter(chapter.id)}
+                        onClick={() => toggleCourse(courseItem.id)}
                         className="flex w-full items-center justify-between gap-4 px-4 py-3 text-left hover:bg-gray-50"
                         aria-expanded={isOpen}
                       >
                         <div className="min-w-0">
                           <div className="text-[12px] font-semibold uppercase tracking-wide text-gray-500">
-                            Lesson {index + 1}
+                            Course {index + 1}
                           </div>
                           <div className="truncate text-[16px] font-semibold text-gray-900">
-                            {chapter.title}
+                            {courseItem.title}
+                          </div>
+                          <div className="mt-0.5 text-xs text-gray-500">
+                            {chapterCount} chapters - {lessonCount} lessons
                           </div>
                         </div>
                         <svg
@@ -179,24 +194,32 @@ export default function CatalogPage() {
 
                       {isOpen && (
                         <div className="bg-gray-50 px-4 pb-4">
-                          {chapter.lessons?.length ? (
+                          {courseItem.description && (
+                            <p className="pt-2 text-sm leading-relaxed text-gray-700">
+                              {stripHtml(courseItem.description)}
+                            </p>
+                          )}
+                          {courseItem.instructor?.fullName && (
+                            <p className="pt-2 text-xs font-semibold uppercase tracking-wide text-gray-600">
+                              Instructor: {courseItem.instructor.fullName}
+                            </p>
+                          )}
+                          {courseItem.curriculum?.chapters?.length ? (
                             <ul className="space-y-2 pt-1">
-                              {chapter.lessons.map((lesson) => (
+                              {courseItem.curriculum.chapters.map((chapter, chapterIdx) => (
                                 <li
-                                  key={lesson.id}
-                                  className="flex items-start justify-between gap-3 rounded border border-gray-200 bg-white px-3 py-2"
+                                  key={chapter.id || `${chapter.title}-${chapterIdx}`}
+                                  className="flex items-start justify-between gap-3 rounded border border-gray-200 bg-white px-3 py-2 text-sm"
                                 >
-                                  <span className="text-sm text-gray-800">{lesson.title}</span>
-                                  {lesson.lessonType && (
-                                    <span className="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-gray-600">
-                                      {lesson.lessonType}
-                                    </span>
-                                  )}
+                                  <span className="text-gray-800">{chapter.title}</span>
+                                  <span className="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-gray-600">
+                                    Chapter {chapter.position || chapterIdx + 1}
+                                  </span>
                                 </li>
                               ))}
                             </ul>
                           ) : (
-                            <p className="pt-2 text-sm text-gray-600">No lesson items provided.</p>
+                            <p className="pt-2 text-sm text-gray-600">No chapter items provided.</p>
                           )}
                         </div>
                       )}
