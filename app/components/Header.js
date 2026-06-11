@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { FaBook, FaCog, FaHome, FaInfoCircle, FaShoppingCart } from "react-icons/fa";
+import { FaBook, FaCog, FaHome, FaInfoCircle } from "react-icons/fa";
 import Logo from "./Logo";
 import { useGrowthzoneProfile } from "../providers/GrowthzoneProfileContext";
 
@@ -89,7 +89,6 @@ const MOBILE_SIDEBAR_ITEMS = [
     href: "/catalog",
     icon: FaBook,
   },
-  { key: "cart", label: "Cart (0 items)", href: "/cart", icon: FaShoppingCart },
 ];
 
 function NavItemLink({ item, className, children, onClick }) {
