@@ -1,10 +1,12 @@
 import crypto from "node:crypto";
 import { NextResponse } from "next/server";
+import { enrollGrowthzoneContactInCertification } from "../../../lib/growthzone-ce-enrollment";
 
 const THINKIFIC_GRAPHQL_URL =
   process.env.THINKIFIC_GRAPHQL_URL || "https://api.thinkific.com/stable/graphql";
 const THINKIFIC_USERS_URL =
   process.env.THINKIFIC_USERS_URL || "https://api.thinkific.com/api/public/v1/users";
+const DEFAULT_GROWTHZONE_CERTIFICATION_TYPE_ID = 4806;
 
 const USER_BY_EMAIL_QUERY = `
   query UserByEmail($email: EmailAddress!) {
@@ -208,6 +210,46 @@ export async function POST(request) {
       email: maskEmail(email),
       subdomain,
       ssoSecretSource: ssoSecretPick.key || null,
+    });
+
+    const certificationTypeId =
+      Number(
+        clean(process.env.GROWTHZONE_CERTIFICATION_TYPE_ID) ||
+          DEFAULT_GROWTHZONE_CERTIFICATION_TYPE_ID,
+      ) || DEFAULT_GROWTHZONE_CERTIFICATION_TYPE_ID;
+    const growthzoneEnrollment = await enrollGrowthzoneContactInCertification({
+      email,
+      certificationTypeId,
+      dryRun: false,
+    });
+
+    if (!growthzoneEnrollment.ok) {
+      logEnrollEvent("request.failed.growthzone-enroll", {
+        email: maskEmail(email),
+        certificationTypeId,
+        error: growthzoneEnrollment.error || "GrowthZone enrollment failed.",
+      });
+      return NextResponse.json(
+        {
+          message: "error",
+          error: growthzoneEnrollment.error || "GrowthZone enrollment failed.",
+          growthzone: {
+            certificationTypeId,
+            contactId: growthzoneEnrollment.contactId || null,
+            certificationContactId: growthzoneEnrollment.certificationContactId || null,
+            attempts: growthzoneEnrollment.attempts || [],
+          },
+        },
+        { status: 409 },
+      );
+    }
+
+    logEnrollEvent("request.growthzone-enroll.succeeded", {
+      email: maskEmail(email),
+      certificationTypeId,
+      alreadyEnrolled: Boolean(growthzoneEnrollment.alreadyEnrolled),
+      growthzoneContactId: growthzoneEnrollment.contactId || null,
+      growthzoneCertificationContactId: growthzoneEnrollment.certificationContactId || null,
     });
 
     const userLookup = await queryThinkificUserByEmail(email, bearerApiKey);

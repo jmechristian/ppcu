@@ -163,6 +163,42 @@ function findEnrollmentForType(rows, certificationTypeId) {
   );
 }
 
+function getEnrollmentFromWriteResponse(json, certificationTypeId, contactId) {
+  if (!json || typeof json !== "object") return null;
+
+  const directTypeId = Number(json.CertificationTypeId);
+  const directContactId = Number(json.ContactId);
+  const directCertificationContactId = Number(json.CertificationContactId);
+  if (
+    Number.isFinite(directCertificationContactId) &&
+    directCertificationContactId > 0 &&
+    directTypeId === Number(certificationTypeId) &&
+    directContactId === Number(contactId)
+  ) {
+    return {
+      certificationContactId: directCertificationContactId,
+      certificationTypeId: directTypeId,
+      contactId: directContactId,
+    };
+  }
+
+  const rows = readResults(json);
+  const found =
+    rows.find(
+      (row) =>
+        Number(row?.CertificationContactId) > 0 &&
+        Number(row?.CertificationTypeId) === Number(certificationTypeId) &&
+        Number(row?.ContactId) === Number(contactId),
+    ) || null;
+  if (!found) return null;
+
+  return {
+    certificationContactId: Number(found.CertificationContactId),
+    certificationTypeId: Number(found.CertificationTypeId),
+    contactId: Number(found.ContactId),
+  };
+}
+
 function buildAdminStyleEnrollmentPayload({ contactId, contactName, certificationTypeId }) {
   const saleableItemId =
     Number(process.env.GROWTHZONE_CERTIFICATION_SALEABLE_ITEM_ID || DEFAULT_CERTIFICATION_SALEABLE_ITEM_ID) ||
@@ -330,6 +366,20 @@ export async function discoverGrowthzoneEnrollment({
       attempts.push(result);
 
       if (!writeRes.response.ok) continue;
+
+      const writeCreated = getEnrollmentFromWriteResponse(writeRes.json, typeId, contact.contactId);
+      if (writeCreated) {
+        return {
+          ok: true,
+          message: "Enrollment confirmed by write response payload.",
+          contact,
+          alreadyEnrolled: false,
+          endpointConfirmed: true,
+          endpointUsed: candidate.path,
+          certificationContactId: writeCreated.certificationContactId,
+          attempts,
+        };
+      }
 
       const after = await getContactCertifications(contact.contactId, timeoutMs);
       const enrolled = findEnrollmentForType(after, typeId);
