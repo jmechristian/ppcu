@@ -167,13 +167,14 @@ function getEnrollmentFromWriteResponse(json, certificationTypeId, contactId) {
   if (!json || typeof json !== "object") return null;
 
   const directTypeId = Number(json.CertificationTypeId);
-  const directContactId = Number(json.ContactId);
+  const hasDirectContactId = Number.isFinite(Number(json.ContactId)) && Number(json.ContactId) > 0;
+  const directContactId = hasDirectContactId ? Number(json.ContactId) : null;
   const directCertificationContactId = Number(json.CertificationContactId);
   if (
     Number.isFinite(directCertificationContactId) &&
     directCertificationContactId > 0 &&
     directTypeId === Number(certificationTypeId) &&
-    directContactId === Number(contactId)
+    (!hasDirectContactId || directContactId === Number(contactId))
   ) {
     return {
       certificationContactId: directCertificationContactId,
