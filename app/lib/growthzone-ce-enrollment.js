@@ -9,8 +9,17 @@ function trimSlash(value) {
   return String(value).replace(/\/+$/, "");
 }
 
+function clean(value) {
+  return String(value || "").trim();
+}
+
 function normalizeEmail(value) {
-  return String(value || "").trim().toLowerCase();
+  return clean(value).toLowerCase();
+}
+
+function normalizeContactId(value) {
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? Math.trunc(n) : null;
 }
 
 function maskEmail(email) {
@@ -271,18 +280,27 @@ function enrollmentEndpointCandidates(contact, certificationTypeId) {
 
 export async function discoverGrowthzoneEnrollment({
   email,
+  contactId,
+  contactName,
   certificationTypeId,
   timeoutMs = DEFAULT_TIMEOUT_MS,
   allowWriteProbe = false,
 }) {
   const normalizedEmail = normalizeEmail(email);
+  const normalizedContactId = normalizeContactId(contactId);
   const typeId = Number(certificationTypeId);
-  if (!normalizedEmail || !Number.isFinite(typeId) || typeId <= 0) {
-    throw new Error("email and certificationTypeId are required for discovery.");
+  if ((!normalizedEmail && !normalizedContactId) || !Number.isFinite(typeId) || typeId <= 0) {
+    throw new Error("contactId or email plus certificationTypeId are required for discovery.");
   }
 
   const { baseUrl, apiKey } = getGrowthzoneConfig();
-  const contact = await findGrowthzoneContactByEmail(normalizedEmail, timeoutMs);
+  const contact = normalizedContactId
+    ? {
+        contactId: normalizedContactId,
+        email: normalizedEmail || null,
+        name: clean(contactName) || "",
+      }
+    : await findGrowthzoneContactByEmail(normalizedEmail, timeoutMs);
   if (!contact?.contactId) {
     return {
       ok: false,
@@ -386,24 +404,30 @@ export async function discoverGrowthzoneEnrollment({
 
 export async function enrollGrowthzoneContactInCertification({
   email,
+  contactId,
+  contactName,
   certificationTypeId,
   timeoutMs = DEFAULT_TIMEOUT_MS,
   dryRun = false,
 }) {
   const normalizedEmail = normalizeEmail(email);
+  const normalizedContactId = normalizeContactId(contactId);
   const typeId = Number(certificationTypeId);
-  if (!normalizedEmail || !Number.isFinite(typeId) || typeId <= 0) {
-    throw new Error("email and certificationTypeId are required.");
+  if ((!normalizedEmail && !normalizedContactId) || !Number.isFinite(typeId) || typeId <= 0) {
+    throw new Error("contactId or email plus certificationTypeId are required.");
   }
 
   logGz("enrollment.started", {
-    email: maskEmail(normalizedEmail),
+    email: normalizedEmail ? maskEmail(normalizedEmail) : "unknown",
+    contactId: normalizedContactId,
     certificationTypeId: typeId,
     dryRun,
   });
 
   const discovery = await discoverGrowthzoneEnrollment({
     email: normalizedEmail,
+    contactId: normalizedContactId,
+    contactName: clean(contactName),
     certificationTypeId: typeId,
     timeoutMs,
     allowWriteProbe: !dryRun,

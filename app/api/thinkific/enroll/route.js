@@ -150,6 +150,8 @@ export async function POST(request) {
     const firstName = clean(body?.first_name);
     const lastName = clean(body?.last_name);
     const returnTo = clean(body?.return_to);
+    const contactId = Number(body?.contact_id);
+    const contactName = clean(body?.contact_name);
 
     if (!email || !firstName || !lastName || !returnTo) {
       logEnrollEvent("request.failed.validation", {
@@ -219,6 +221,8 @@ export async function POST(request) {
       ) || DEFAULT_GROWTHZONE_CERTIFICATION_TYPE_ID;
     const growthzoneEnrollment = await enrollGrowthzoneContactInCertification({
       email,
+      contactId: Number.isFinite(contactId) && contactId > 0 ? contactId : null,
+      contactName,
       certificationTypeId,
       dryRun: false,
     });

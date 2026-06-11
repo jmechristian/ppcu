@@ -89,6 +89,8 @@ export default function CatalogPage() {
       const firstName = (profile.firstName || "").trim();
       const lastName = (profile.lastName || "").trim();
       const email = (profile.email || "").trim().toLowerCase();
+      const contactId = Number(profile.contactId);
+      const contactName = (profile.name || `${firstName} ${lastName}`.trim()).trim();
 
       if (!firstName || !lastName || !email) {
         throw new Error("Missing profile data required for enrollment.");
@@ -101,6 +103,8 @@ export default function CatalogPage() {
           email,
           first_name: firstName,
           last_name: lastName,
+          contact_id: Number.isFinite(contactId) && contactId > 0 ? contactId : null,
+          contact_name: contactName,
           return_to: bundle.product.checkoutUrl,
         }),
       });

@@ -27,6 +27,11 @@ function normalizeEmail(value) {
   return String(value || "").trim().toLowerCase();
 }
 
+function toPositiveInt(value) {
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? Math.trunc(n) : null;
+}
+
 function getApiHeaders(apiKey) {
   return {
     "Content-Type": "application/json",
@@ -133,12 +138,27 @@ export async function GET(request) {
     (nameParts.length > 1 ? nameParts.slice(1).join(" ") : null);
   const normalizedEmail = normalizeEmail(email);
 
+  const oauthContactId = toPositiveInt(aboutMe.ContactId);
   let matchedContact = null;
   let business = aboutMe.CurrentOrganizationName || null;
   let title = aboutMe.Title || null;
   let type = null;
 
-  if (normalizedEmail) {
+  if (oauthContactId) {
+    try {
+      const contactOrgs = await fetchJson(
+        `${baseUrl}/api/ContactOverview/${oauthContactId}/ContactOrgs/`,
+        { method: "GET", headers: getApiHeaders(apiKey) },
+      );
+      if (contactOrgs.response.ok) {
+        const firstOrg = readResults(contactOrgs.json)?.[0] || null;
+        const details = extractOrgDetails(firstOrg);
+        business = details.business || business;
+        title = details.title || title;
+        type = details.type || type;
+      }
+    } catch {}
+  } else if (normalizedEmail) {
     try {
       const pageSize = 500;
       const firstPage = await fetchJson(
@@ -191,7 +211,7 @@ export async function GET(request) {
       lastName,
       name: fullName,
       email,
-      contactId: matchedContact?.ContactId || aboutMe.ContactId || null,
+      contactId: oauthContactId || matchedContact?.ContactId || null,
       business,
       title,
       type,
