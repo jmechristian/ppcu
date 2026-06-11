@@ -7,9 +7,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [submitting, setSubmitting] = useState(true);
+  const loggedOut = searchParams.get("loggedOut") === "1";
+  const [submitting, setSubmitting] = useState(!loggedOut);
   const [statusMessage, setStatusMessage] = useState("");
-  const oauthStartUrl = "/api/growthzone/oauth/start?returnTo=/";
+  const oauthStartUrl = "/api/growthzone/oauth/start?returnTo=/&prompt=login&max_age=0";
 
   const oauthError = useMemo(() => {
     const oauth = searchParams.get("oauth");
@@ -36,6 +37,18 @@ function LoginContent() {
     let cancelled = false;
     (async () => {
       try {
+        if (loggedOut) {
+          await fetch("/api/growthzone/oauth/logout", {
+            method: "POST",
+            credentials: "include",
+          });
+          if (!cancelled) {
+            setSubmitting(false);
+            setStatusMessage("You have been logged out.");
+          }
+          return;
+        }
+
         const response = await fetch("/api/growthzone/oauth/status", {
           cache: "no-store",
         });
@@ -67,7 +80,7 @@ function LoginContent() {
     return () => {
       cancelled = true;
     };
-  }, [oauthError, oauthStartUrl, router]);
+  }, [loggedOut, oauthError, oauthStartUrl, router]);
 
   return (
     <div className="min-h-screen flex flex-col bg-[#f2f2f2]">

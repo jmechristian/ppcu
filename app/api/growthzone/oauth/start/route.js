@@ -35,13 +35,24 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const returnTo = searchParams.get("returnTo") || "/";
   const scope = searchParams.get("scope") || "email openid profile offline_access";
+  const prompt = searchParams.get("prompt");
+  const maxAge = searchParams.get("max_age");
   const state = `${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
 
-  const authorizeUrl = `${baseUrl}/oauth/authorize?client_id=${encodeURIComponent(
-    clientId,
-  )}&redirect_uri=${encodeURIComponent(
-    callbackUrl,
-  )}&response_type=code&scope=${encodeURIComponent(scope)}&state=${encodeURIComponent(state)}`;
+  const authorize = new URL(`${baseUrl}/oauth/authorize`);
+  authorize.searchParams.set("client_id", clientId);
+  authorize.searchParams.set("redirect_uri", callbackUrl);
+  authorize.searchParams.set("response_type", "code");
+  authorize.searchParams.set("scope", scope);
+  authorize.searchParams.set("state", state);
+  if (prompt) {
+    authorize.searchParams.set("prompt", prompt);
+  }
+  if (maxAge) {
+    authorize.searchParams.set("max_age", maxAge);
+  }
+
+  const authorizeUrl = authorize.toString();
 
   const response = NextResponse.redirect(authorizeUrl);
   response.headers.append("Set-Cookie", buildCookie("growthzone_oauth_state", state, 600));

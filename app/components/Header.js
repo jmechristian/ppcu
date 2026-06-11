@@ -164,7 +164,7 @@ export default function Header() {
       }
       await refreshProfile();
       setMobileOpen(false);
-      router.push("/login");
+      router.push("/login?loggedOut=1");
     }
   }
 

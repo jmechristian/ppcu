@@ -1,7 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { FaBook, FaCog, FaHome, FaInfoCircle, FaShoppingCart } from "react-icons/fa";
+import {
+  FaBook,
+  FaBookOpen,
+  FaCog,
+  FaHome,
+  FaInfoCircle,
+  FaShoppingCart,
+} from "react-icons/fa";
 import { useGrowthzoneProfile } from "../providers/GrowthzoneProfileContext";
 
 const BASE_NAV_ITEMS = [
@@ -22,6 +29,12 @@ const BASE_NAV_ITEMS = [
     href: "/catalog",
     label: "Folding Carton Essentials",
     icon: <FaBook className="h-5 w-5" aria-hidden="true" />,
+  },
+  {
+    key: "learning",
+    href: "/learning",
+    label: "My Learning",
+    icon: <FaBookOpen className="h-5 w-5" aria-hidden="true" />,
   },
   {
     key: "cart",
