@@ -101,6 +101,11 @@ async function fetchOutlineWithRetry(query, variables, apiKey) {
 }
 
 function normalizeBundle(rawBundle) {
+  function parseLeadingOrder(value) {
+    const match = String(value || "").trim().match(/^(\d+)\s*[.)-]/);
+    return match ? Number(match[1]) : null;
+  }
+
   const courses =
     rawBundle?.items?.nodes
       ?.filter(Boolean)
@@ -118,6 +123,7 @@ function normalizeBundle(rawBundle) {
         return {
           id: course?.id || `${course?.title || course?.name || "course"}-${index}`,
           title: course?.title || course?.name || `Course ${index + 1}`,
+          order: parseLeadingOrder(course?.title || course?.name) ?? index + 1,
           description: course?.description || "",
           instructor: {
             fullName: course?.instructor?.fullName || "",
@@ -130,6 +136,10 @@ function normalizeBundle(rawBundle) {
             chapters,
           },
         };
+      })
+      .sort((a, b) => {
+        if (a.order !== b.order) return a.order - b.order;
+        return String(a.title).localeCompare(String(b.title));
       }) || [];
 
   const totals = courses.reduce(

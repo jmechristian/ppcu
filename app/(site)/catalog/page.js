@@ -15,6 +15,8 @@ export default function CatalogPage() {
   const isLoggedIn = profile.status === "ready";
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [enrollError, setEnrollError] = useState("");
+  const [isEnrolling, setIsEnrolling] = useState(false);
   const [bundle, setBundle] = useState(null);
   const [openCourseIds, setOpenCourseIds] = useState(() => new Set());
 
@@ -78,6 +80,43 @@ export default function CatalogPage() {
     });
   }
 
+  async function handleEnroll() {
+    if (!bundle?.product?.checkoutUrl || isEnrolling) return;
+    setEnrollError("");
+    setIsEnrolling(true);
+
+    try {
+      const firstName = (profile.firstName || "").trim();
+      const lastName = (profile.lastName || "").trim();
+      const email = (profile.email || "").trim().toLowerCase();
+
+      if (!firstName || !lastName || !email) {
+        throw new Error("Missing profile data required for enrollment.");
+      }
+
+      const response = await fetch("/api/thinkific/enroll", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          first_name: firstName,
+          last_name: lastName,
+          return_to: bundle.product.checkoutUrl,
+        }),
+      });
+      const json = await response.json().catch(() => ({}));
+
+      if (!response.ok || !json?.url) {
+        throw new Error(json?.error || "Unable to start Thinkific enrollment.");
+      }
+
+      window.location.assign(json.url);
+    } catch (err) {
+      setEnrollError(err?.message || "Unable to start enrollment.");
+      setIsEnrolling(false);
+    }
+  }
+
   return (
     <InteriorPageLayout activeItem="catalog">
       <section className="min-h-[520px] border border-gray-300 bg-white p-5 sm:p-6">
@@ -106,14 +145,14 @@ export default function CatalogPage() {
                   {bundle.title}
                 </h1>
                 {isLoggedIn && bundle.product?.checkoutUrl && (
-                  <a
-                    href={bundle.product.checkoutUrl}
-                    target="_blank"
-                    rel="noreferrer"
+                  <button
+                    type="button"
+                    onClick={handleEnroll}
+                    disabled={isEnrolling}
                     className="inline-flex items-center rounded bg-brand-green px-5 py-2 text-[12px] font-semibold uppercase tracking-[0.08em] text-white hover:brightness-110"
                   >
-                    Enroll
-                  </a>
+                    {isEnrolling ? "Preparing..." : "Enroll"}
+                  </button>
                 )}
                 {!isLoggedIn && (
                   <Link
@@ -124,6 +163,11 @@ export default function CatalogPage() {
                   </Link>
                 )}
               </div>
+              {enrollError && (
+                <div className="rounded border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                  {enrollError}
+                </div>
+              )}
               {description && (
                 <p className="max-w-4xl text-[15px] leading-relaxed text-gray-700">{description}</p>
               )}
@@ -213,7 +257,7 @@ export default function CatalogPage() {
                                 >
                                   <span className="text-gray-800">{chapter.title}</span>
                                   <span className="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-gray-600">
-                                    Chapter {chapter.position || chapterIdx + 1}
+                                    Chapter {chapterIdx + 1}
                                   </span>
                                 </li>
                               ))}

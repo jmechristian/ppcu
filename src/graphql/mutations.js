@@ -6667,6 +6667,231 @@ export const deleteCategoryClick = /* GraphQL */ `
     }
   }
 `;
+export const createAbTestExposure = /* GraphQL */ `
+  mutation CreateAbTestExposure(
+    $input: CreateAbTestExposureInput!
+    $condition: ModelAbTestExposureConditionInput
+  ) {
+    createAbTestExposure(input: $input, condition: $condition) {
+      id
+      experimentKey
+      variant
+      sessionId
+      userID
+      pagePath
+      deviceType
+      acquisitionChannel
+      acquisitionSource
+      acquisitionMedium
+      acquisitionCampaign
+      acquisitionTerm
+      acquisitionContent
+      source
+      referrer
+      ipAddress
+      country
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const updateAbTestExposure = /* GraphQL */ `
+  mutation UpdateAbTestExposure(
+    $input: UpdateAbTestExposureInput!
+    $condition: ModelAbTestExposureConditionInput
+  ) {
+    updateAbTestExposure(input: $input, condition: $condition) {
+      id
+      experimentKey
+      variant
+      sessionId
+      userID
+      pagePath
+      deviceType
+      acquisitionChannel
+      acquisitionSource
+      acquisitionMedium
+      acquisitionCampaign
+      acquisitionTerm
+      acquisitionContent
+      source
+      referrer
+      ipAddress
+      country
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const deleteAbTestExposure = /* GraphQL */ `
+  mutation DeleteAbTestExposure(
+    $input: DeleteAbTestExposureInput!
+    $condition: ModelAbTestExposureConditionInput
+  ) {
+    deleteAbTestExposure(input: $input, condition: $condition) {
+      id
+      experimentKey
+      variant
+      sessionId
+      userID
+      pagePath
+      deviceType
+      acquisitionChannel
+      acquisitionSource
+      acquisitionMedium
+      acquisitionCampaign
+      acquisitionTerm
+      acquisitionContent
+      source
+      referrer
+      ipAddress
+      country
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const createAbTestEvent = /* GraphQL */ `
+  mutation CreateAbTestEvent(
+    $input: CreateAbTestEventInput!
+    $condition: ModelAbTestEventConditionInput
+  ) {
+    createAbTestEvent(input: $input, condition: $condition) {
+      id
+      experimentKey
+      eventName
+      variant
+      sessionId
+      userID
+      pagePath
+      deviceType
+      acquisitionChannel
+      acquisitionSource
+      acquisitionMedium
+      acquisitionCampaign
+      acquisitionTerm
+      acquisitionContent
+      referrer
+      previousPath
+      nextPath
+      metric
+      value
+      orderId
+      externalOrderId
+      orderNumber
+      purchaserEmail
+      purchaserFirstName
+      purchaserLastName
+      couponCode
+      grossAmountCents
+      netAmountCents
+      discountAmountCents
+      source
+      reason
+      ipAddress
+      country
+      metadata
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const updateAbTestEvent = /* GraphQL */ `
+  mutation UpdateAbTestEvent(
+    $input: UpdateAbTestEventInput!
+    $condition: ModelAbTestEventConditionInput
+  ) {
+    updateAbTestEvent(input: $input, condition: $condition) {
+      id
+      experimentKey
+      eventName
+      variant
+      sessionId
+      userID
+      pagePath
+      deviceType
+      acquisitionChannel
+      acquisitionSource
+      acquisitionMedium
+      acquisitionCampaign
+      acquisitionTerm
+      acquisitionContent
+      referrer
+      previousPath
+      nextPath
+      metric
+      value
+      orderId
+      externalOrderId
+      orderNumber
+      purchaserEmail
+      purchaserFirstName
+      purchaserLastName
+      couponCode
+      grossAmountCents
+      netAmountCents
+      discountAmountCents
+      source
+      reason
+      ipAddress
+      country
+      metadata
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const deleteAbTestEvent = /* GraphQL */ `
+  mutation DeleteAbTestEvent(
+    $input: DeleteAbTestEventInput!
+    $condition: ModelAbTestEventConditionInput
+  ) {
+    deleteAbTestEvent(input: $input, condition: $condition) {
+      id
+      experimentKey
+      eventName
+      variant
+      sessionId
+      userID
+      pagePath
+      deviceType
+      acquisitionChannel
+      acquisitionSource
+      acquisitionMedium
+      acquisitionCampaign
+      acquisitionTerm
+      acquisitionContent
+      referrer
+      previousPath
+      nextPath
+      metric
+      value
+      orderId
+      externalOrderId
+      orderNumber
+      purchaserEmail
+      purchaserFirstName
+      purchaserLastName
+      couponCode
+      grossAmountCents
+      netAmountCents
+      discountAmountCents
+      source
+      reason
+      ipAddress
+      country
+      metadata
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
 export const createClick = /* GraphQL */ `
   mutation CreateClick(
     $input: CreateClickInput!
@@ -9111,6 +9336,105 @@ export const deleteOrder = /* GraphQL */ `
       createdAt
       updatedAt
       userOrdersId
+      __typename
+    }
+  }
+`;
+export const createThinkificEnrollmentWebhookEvent = /* GraphQL */ `
+  mutation CreateThinkificEnrollmentWebhookEvent(
+    $input: CreateThinkificEnrollmentWebhookEventInput!
+    $condition: ModelThinkificEnrollmentWebhookEventConditionInput
+  ) {
+    createThinkificEnrollmentWebhookEvent(
+      input: $input
+      condition: $condition
+    ) {
+      id
+      eventId
+      resource
+      action
+      tenantId
+      eventCreatedAt
+      email
+      firstName
+      lastName
+      thinkificUserId
+      thinkificEnrollmentId
+      thinkificCourseId
+      status
+      retryCount
+      growthzoneContactId
+      growthzoneCertificationContactId
+      error
+      processingNotes
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const updateThinkificEnrollmentWebhookEvent = /* GraphQL */ `
+  mutation UpdateThinkificEnrollmentWebhookEvent(
+    $input: UpdateThinkificEnrollmentWebhookEventInput!
+    $condition: ModelThinkificEnrollmentWebhookEventConditionInput
+  ) {
+    updateThinkificEnrollmentWebhookEvent(
+      input: $input
+      condition: $condition
+    ) {
+      id
+      eventId
+      resource
+      action
+      tenantId
+      eventCreatedAt
+      email
+      firstName
+      lastName
+      thinkificUserId
+      thinkificEnrollmentId
+      thinkificCourseId
+      status
+      retryCount
+      growthzoneContactId
+      growthzoneCertificationContactId
+      error
+      processingNotes
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const deleteThinkificEnrollmentWebhookEvent = /* GraphQL */ `
+  mutation DeleteThinkificEnrollmentWebhookEvent(
+    $input: DeleteThinkificEnrollmentWebhookEventInput!
+    $condition: ModelThinkificEnrollmentWebhookEventConditionInput
+  ) {
+    deleteThinkificEnrollmentWebhookEvent(
+      input: $input
+      condition: $condition
+    ) {
+      id
+      eventId
+      resource
+      action
+      tenantId
+      eventCreatedAt
+      email
+      firstName
+      lastName
+      thinkificUserId
+      thinkificEnrollmentId
+      thinkificCourseId
+      status
+      retryCount
+      growthzoneContactId
+      growthzoneCertificationContactId
+      error
+      processingNotes
+      createdAt
+      updatedAt
       __typename
     }
   }
