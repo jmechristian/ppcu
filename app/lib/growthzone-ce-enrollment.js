@@ -266,31 +266,6 @@ function enrollmentEndpointCandidates(contact, certificationTypeId) {
         }),
       ],
     },
-    {
-      path: "/api/certifications/contacts/",
-      payloads: () => [
-        { ContactId: contact.contactId, CertificationTypeId: certificationTypeId },
-        { ContactId: contact.contactId, CertificationTypeId: certificationTypeId, IsActive: true },
-      ],
-    },
-    {
-      path: "/api/certifications/contacts",
-      payloads: () => [{ ContactId: contact.contactId, CertificationTypeId: certificationTypeId }],
-    },
-    {
-      path: "/api/mic/certificationcontact",
-      payloads: () => [
-        { contactId: contact.contactId, certificationTypeId },
-        { ContactId: contact.contactId, CertificationTypeId: certificationTypeId },
-      ],
-    },
-    {
-      path: "/api/mic/certificationcontactactivity",
-      payloads: () => [
-        { contactId: contact.contactId, certificationTypeId },
-        { ContactId: contact.contactId, CertificationTypeId: certificationTypeId },
-      ],
-    },
   ];
 }
 
