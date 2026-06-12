@@ -74,6 +74,30 @@ function withRoleParam(rawUrl, role = "ppcu") {
   }
 }
 
+function ensureQueryParam(rawUrl, key, value) {
+  const urlValue = clean(rawUrl);
+  const k = clean(key);
+  const v = clean(value);
+  if (!urlValue || !k || !v) return urlValue;
+
+  try {
+    const parsed = new URL(urlValue);
+    if (!parsed.searchParams.get(k)) {
+      parsed.searchParams.set(k, v);
+    }
+    return parsed.toString();
+  } catch {
+    const hasQuery = urlValue.includes("?");
+    const hasHash = urlValue.includes("#");
+    const encoded = `${encodeURIComponent(k)}=${encodeURIComponent(v)}`;
+    if (hasHash) {
+      const [base, hash] = urlValue.split("#", 2);
+      return `${base}${hasQuery ? "&" : "?"}${encoded}#${hash}`;
+    }
+    return `${urlValue}${hasQuery ? "&" : "?"}${encoded}`;
+  }
+}
+
 function base64url(value) {
   return Buffer.from(value)
     .toString("base64")
@@ -362,7 +386,8 @@ export async function POST(request) {
     }
 
     const separator = ssoBaseUrl.includes("?") ? "&" : "?";
-    const url = `${ssoBaseUrl}${separator}jwt=${encodeURIComponent(token)}&return_to=${encodeURIComponent(returnToWithRole)}`;
+    let url = `${ssoBaseUrl}${separator}jwt=${encodeURIComponent(token)}&return_to=${encodeURIComponent(returnToWithRole)}`;
+    url = ensureQueryParam(url, "role", "ppcu");
 
     logEnrollEvent("request.succeeded", {
       email: maskEmail(email),
