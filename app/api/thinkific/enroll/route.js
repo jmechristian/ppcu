@@ -199,6 +199,9 @@ export async function POST(request) {
     const returnToWithRole = withRoleParam(returnTo, "ppcu");
     const contactId = Number(body?.contact_id);
     const contactName = clean(body?.contact_name);
+    const shouldEnrollGrowthzone =
+      body?.trigger_growthzone_enrollment === true ||
+      String(body?.trigger_growthzone_enrollment || "").toLowerCase() === "true";
 
     if (!email || !firstName || !lastName || !returnToWithRole) {
       logEnrollEvent("request.failed.validation", {
@@ -261,47 +264,54 @@ export async function POST(request) {
       ssoSecretSource: ssoSecretPick.key || null,
     });
 
-    const certificationTypeId =
-      Number(
-        clean(process.env.GROWTHZONE_CERTIFICATION_TYPE_ID) ||
-          DEFAULT_GROWTHZONE_CERTIFICATION_TYPE_ID,
-      ) || DEFAULT_GROWTHZONE_CERTIFICATION_TYPE_ID;
-    const growthzoneEnrollment = await enrollGrowthzoneContactInCertification({
-      email,
-      contactId: Number.isFinite(contactId) && contactId > 0 ? contactId : null,
-      contactName,
-      certificationTypeId,
-      dryRun: false,
-    });
+    let growthzoneEnrollment = null;
+    if (shouldEnrollGrowthzone) {
+      const certificationTypeId =
+        Number(
+          clean(process.env.GROWTHZONE_CERTIFICATION_TYPE_ID) ||
+            DEFAULT_GROWTHZONE_CERTIFICATION_TYPE_ID,
+        ) || DEFAULT_GROWTHZONE_CERTIFICATION_TYPE_ID;
+      growthzoneEnrollment = await enrollGrowthzoneContactInCertification({
+        email,
+        contactId: Number.isFinite(contactId) && contactId > 0 ? contactId : null,
+        contactName,
+        certificationTypeId,
+        dryRun: false,
+      });
 
-    if (!growthzoneEnrollment.ok) {
-      logEnrollEvent("request.failed.growthzone-enroll", {
+      if (!growthzoneEnrollment.ok) {
+        logEnrollEvent("request.failed.growthzone-enroll", {
+          email: maskEmail(email),
+          certificationTypeId,
+          error: growthzoneEnrollment.error || "GrowthZone enrollment failed.",
+        });
+        return NextResponse.json(
+          {
+            message: "error",
+            error: growthzoneEnrollment.error || "GrowthZone enrollment failed.",
+            growthzone: {
+              certificationTypeId,
+              contactId: growthzoneEnrollment.contactId || null,
+              certificationContactId: growthzoneEnrollment.certificationContactId || null,
+              attempts: growthzoneEnrollment.attempts || [],
+            },
+          },
+          { status: 409 },
+        );
+      }
+
+      logEnrollEvent("request.growthzone-enroll.succeeded", {
         email: maskEmail(email),
         certificationTypeId,
-        error: growthzoneEnrollment.error || "GrowthZone enrollment failed.",
+        alreadyEnrolled: Boolean(growthzoneEnrollment.alreadyEnrolled),
+        growthzoneContactId: growthzoneEnrollment.contactId || null,
+        growthzoneCertificationContactId: growthzoneEnrollment.certificationContactId || null,
       });
-      return NextResponse.json(
-        {
-          message: "error",
-          error: growthzoneEnrollment.error || "GrowthZone enrollment failed.",
-          growthzone: {
-            certificationTypeId,
-            contactId: growthzoneEnrollment.contactId || null,
-            certificationContactId: growthzoneEnrollment.certificationContactId || null,
-            attempts: growthzoneEnrollment.attempts || [],
-          },
-        },
-        { status: 409 },
-      );
+    } else {
+      logEnrollEvent("request.growthzone-enroll.skipped", {
+        email: maskEmail(email),
+      });
     }
-
-    logEnrollEvent("request.growthzone-enroll.succeeded", {
-      email: maskEmail(email),
-      certificationTypeId,
-      alreadyEnrolled: Boolean(growthzoneEnrollment.alreadyEnrolled),
-      growthzoneContactId: growthzoneEnrollment.contactId || null,
-      growthzoneCertificationContactId: growthzoneEnrollment.certificationContactId || null,
-    });
 
     const userLookup = await queryThinkificUserByEmail(email, bearerApiKey);
     if (!userLookup.response.ok) {

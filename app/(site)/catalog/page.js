@@ -105,6 +105,7 @@ export default function CatalogPage() {
           last_name: lastName,
           contact_id: Number.isFinite(contactId) && contactId > 0 ? contactId : null,
           contact_name: contactName,
+          trigger_growthzone_enrollment: true,
           return_to: bundle.product.checkoutUrl,
         }),
       });
