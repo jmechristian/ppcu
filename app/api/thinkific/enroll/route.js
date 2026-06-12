@@ -52,6 +52,28 @@ function clean(value) {
   return String(value || "").trim();
 }
 
+function withRoleParam(rawUrl, role = "ppcu") {
+  const value = clean(rawUrl);
+  if (!value) return "";
+
+  try {
+    const isAbsolute = /^https?:\/\//i.test(value);
+    const parsed = new URL(value, "https://packagingschool.com");
+    if (!parsed.searchParams.get("role")) {
+      parsed.searchParams.set("role", role);
+    }
+    return isAbsolute ? parsed.toString() : `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch {
+    const hasQuery = value.includes("?");
+    const hasHash = value.includes("#");
+    if (hasHash) {
+      const [base, hash] = value.split("#", 2);
+      return `${base}${hasQuery ? "&" : "?"}role=${encodeURIComponent(role)}#${hash}`;
+    }
+    return `${value}${hasQuery ? "&" : "?"}role=${encodeURIComponent(role)}`;
+  }
+}
+
 function base64url(value) {
   return Buffer.from(value)
     .toString("base64")
@@ -150,15 +172,16 @@ export async function POST(request) {
     const firstName = clean(body?.first_name);
     const lastName = clean(body?.last_name);
     const returnTo = clean(body?.return_to);
+    const returnToWithRole = withRoleParam(returnTo, "ppcu");
     const contactId = Number(body?.contact_id);
     const contactName = clean(body?.contact_name);
 
-    if (!email || !firstName || !lastName || !returnTo) {
+    if (!email || !firstName || !lastName || !returnToWithRole) {
       logEnrollEvent("request.failed.validation", {
         email: maskEmail(email),
         hasFirstName: Boolean(firstName),
         hasLastName: Boolean(lastName),
-        hasReturnTo: Boolean(returnTo),
+        hasReturnTo: Boolean(returnToWithRole),
       });
       return NextResponse.json(
         {
@@ -339,7 +362,7 @@ export async function POST(request) {
     }
 
     const separator = ssoBaseUrl.includes("?") ? "&" : "?";
-    const url = `${ssoBaseUrl}${separator}jwt=${encodeURIComponent(token)}&return_to=${encodeURIComponent(returnTo)}`;
+    const url = `${ssoBaseUrl}${separator}jwt=${encodeURIComponent(token)}&return_to=${encodeURIComponent(returnToWithRole)}`;
 
     logEnrollEvent("request.succeeded", {
       email: maskEmail(email),
@@ -347,7 +370,7 @@ export async function POST(request) {
       userId: existingUserId || createdUserId || null,
       returnToDomain: (() => {
         try {
-          return new URL(returnTo).hostname;
+          return new URL(returnToWithRole).hostname;
         } catch {
           return "unknown";
         }
