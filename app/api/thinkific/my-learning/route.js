@@ -4,6 +4,9 @@ const THINKIFIC_GRAPHQL_URL =
   process.env.THINKIFIC_GRAPHQL_URL || "https://api.thinkific.com/stable/graphql";
 const THINKIFIC_ENROLLMENTS_URL =
   process.env.THINKIFIC_ENROLLMENTS_URL || "https://api.thinkific.com/api/public/v1/enrollments";
+const LEARNING_CACHE_TTL_MS = 1000 * 60 * 5;
+const LEARNING_CACHE_STALE_MS = 1000 * 60 * 60;
+const learningCache = new Map();
 
 const USER_LEARNING_QUERY = `
   query UserByEmail($email: EmailAddress!, $first: Int) {
@@ -96,24 +99,57 @@ function getProgressByCourseId(payload) {
   return map;
 }
 
-async function queryThinkificUserByEmail(email, bearerApiKey) {
-  const response = await fetch(THINKIFIC_GRAPHQL_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${bearerApiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      query: USER_LEARNING_QUERY,
-      variables: {
-        email,
-        first: 100,
-      },
-    }),
-    cache: "no-store",
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isGraphqlRateLimited(response, json) {
+  if (response?.status === 429) return true;
+  const errors = Array.isArray(json?.errors) ? json.errors : [];
+  return errors.some((err) => {
+    const code = String(err?.extensions?.code || "").toUpperCase();
+    const message = String(err?.message || "");
+    return code === "RATE_LIMITED" || /rate limit/i.test(message);
   });
-  const json = await response.json().catch(() => ({}));
-  return { response, json };
+}
+
+function isStaleCacheUsable(entry) {
+  if (!entry) return false;
+  const age = Date.now() - Number(entry.cachedAt || 0);
+  return age <= LEARNING_CACHE_STALE_MS;
+}
+
+async function queryThinkificUserByEmail(email, bearerApiKey) {
+  let last = { response: null, json: {}, rateLimited: false };
+  const backoffMs = [250, 500, 1000];
+
+  for (let i = 0; i < backoffMs.length; i += 1) {
+    const response = await fetch(THINKIFIC_GRAPHQL_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${bearerApiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        query: USER_LEARNING_QUERY,
+        variables: {
+          email,
+          first: 100,
+        },
+      }),
+      cache: "no-store",
+    });
+    const json = await response.json().catch(() => ({}));
+    const rateLimited = isGraphqlRateLimited(response, json);
+    last = { response, json, rateLimited };
+
+    if (!rateLimited) return last;
+    if (i < backoffMs.length - 1) {
+      await sleep(backoffMs[i]);
+    }
+  }
+
+  return last;
 }
 
 async function fetchEnrollmentsByEmail({ email, restApiKey, subdomain }) {
@@ -157,7 +193,17 @@ export async function GET(request) {
       );
     }
 
-    const { response, json } = await queryThinkificUserByEmail(email, bearerApiKey);
+    const cached = learningCache.get(email);
+    const hasFreshCache = cached && cached.expiresAt > Date.now();
+    if (hasFreshCache) {
+      return NextResponse.json({
+        message: "success",
+        data: cached.data,
+        fromCache: true,
+      });
+    }
+
+    const { response, json, rateLimited } = await queryThinkificUserByEmail(email, bearerApiKey);
     if (!response.ok) {
       return NextResponse.json(
         { message: "error", error: json?.message || `Request failed (${response.status}).` },
@@ -165,6 +211,15 @@ export async function GET(request) {
       );
     }
     if (Array.isArray(json?.errors) && json.errors.length > 0) {
+      if (rateLimited && isStaleCacheUsable(cached)) {
+        return NextResponse.json({
+          message: "success",
+          data: cached.data,
+          fromCache: true,
+          stale: true,
+          warning: "Thinkific rate limit hit, serving cached learning data.",
+        });
+      }
       return NextResponse.json(
         { message: "error", error: json.errors[0]?.message || "GraphQL error.", errors: json.errors },
         { status: 400 },
@@ -207,20 +262,41 @@ export async function GET(request) {
       };
     });
 
+    const data = {
+      user: {
+        id: clean(user?.id),
+        firstName: clean(user?.firstName),
+        lastName: clean(user?.lastName),
+        email: normalizeEmail(user?.email),
+        hasAdminRole: Boolean(user?.hasAdminRole),
+      },
+      courses,
+    };
+
+    learningCache.set(email, {
+      data,
+      cachedAt: Date.now(),
+      expiresAt: Date.now() + LEARNING_CACHE_TTL_MS,
+    });
+
     return NextResponse.json({
       message: "success",
-      data: {
-        user: {
-          id: clean(user?.id),
-          firstName: clean(user?.firstName),
-          lastName: clean(user?.lastName),
-          email: normalizeEmail(user?.email),
-          hasAdminRole: Boolean(user?.hasAdminRole),
-        },
-        courses,
-      },
+      data,
+      fromCache: false,
     });
   } catch (error) {
+    const { searchParams } = new URL(request.url);
+    const email = normalizeEmail(searchParams.get("email"));
+    const cached = learningCache.get(email);
+    if (isStaleCacheUsable(cached)) {
+      return NextResponse.json({
+        message: "success",
+        data: cached.data,
+        fromCache: true,
+        stale: true,
+        warning: "Learning API transient failure, serving cached data.",
+      });
+    }
     return NextResponse.json(
       { message: "error", error: error?.message || "Internal server error." },
       { status: 500 },
