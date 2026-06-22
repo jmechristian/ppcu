@@ -134,11 +134,23 @@ function getGraphqlConfigs() {
     }
   }
 
+  function isLocalhostEndpoint(endpoint) {
+    try {
+      const host = new URL(endpoint).hostname;
+      return host === "localhost" || host === "127.0.0.1";
+    } catch {
+      return false;
+    }
+  }
+
   function addConfig(endpoint, apiKey, source) {
     const cleanedApiKey = cleanEnvValue(apiKey);
     if (!cleanedApiKey) return;
     const normalizedEndpoint = normalizeEndpoint(endpoint);
     if (!normalizedEndpoint) return;
+    if (process.env.NODE_ENV === "production" && isLocalhostEndpoint(normalizedEndpoint)) {
+      return;
+    }
     if (
       configs.some(
         (config) => config.endpoint === normalizedEndpoint && config.apiKey === cleanedApiKey,
