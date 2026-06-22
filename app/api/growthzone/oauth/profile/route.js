@@ -1,82 +1,19 @@
 import { NextResponse } from "next/server";
+import {
+  extractOrgDetails,
+  extractOrganizationContactId,
+  fetchJson,
+  getApiHeaders,
+  parseCookies,
+  readResults,
+  toPositiveInt,
+  trimSlash,
+} from "@/app/lib/growthzone-api";
 
 const DEFAULT_TIMEOUT_MS = 10000;
 
-function trimSlash(value) {
-  if (!value) return "";
-  return String(value).replace(/\/+$/, "");
-}
-
-function parseCookies(cookieHeader) {
-  const out = {};
-  (cookieHeader || "")
-    .split(";")
-    .map((v) => v.trim())
-    .filter(Boolean)
-    .forEach((part) => {
-      const idx = part.indexOf("=");
-      if (idx === -1) return;
-      const key = part.slice(0, idx);
-      const value = part.slice(idx + 1);
-      out[key] = decodeURIComponent(value);
-    });
-  return out;
-}
-
 function normalizeEmail(value) {
   return String(value || "").trim().toLowerCase();
-}
-
-function toPositiveInt(value) {
-  const n = Number(value);
-  return Number.isFinite(n) && n > 0 ? Math.trunc(n) : null;
-}
-
-function getApiHeaders(apiKey) {
-  return {
-    "Content-Type": "application/json",
-    Authorization: `ApiKey ${apiKey}`,
-  };
-}
-
-async function requestWithTimeout(url, options, timeoutMs = DEFAULT_TIMEOUT_MS) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    return await fetch(url, { ...options, signal: controller.signal });
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
-async function fetchJson(url, options, timeoutMs = DEFAULT_TIMEOUT_MS) {
-  const response = await requestWithTimeout(url, options, timeoutMs);
-  const text = await response.text();
-  let json;
-  try {
-    json = text ? JSON.parse(text) : null;
-  } catch {
-    json = null;
-  }
-  return { response, json, text, url };
-}
-
-function readResults(payload) {
-  if (!payload || typeof payload !== "object") return [];
-  if (Array.isArray(payload.Results)) return payload.Results;
-  if (Array.isArray(payload.results)) return payload.results;
-  if (Array.isArray(payload.Items)) return payload.Items;
-  if (Array.isArray(payload)) return payload;
-  return [];
-}
-
-function extractOrgDetails(contactOrg) {
-  const raw = contactOrg && typeof contactOrg === "object" ? contactOrg : {};
-  return {
-    business: raw.Name || raw.OrganizationName || raw.CompanyName || raw.Company || null,
-    title: raw.Title || raw.JobTitle || raw.PositionTitle || null,
-    type: raw.Type || null,
-  };
 }
 
 export async function GET(request) {
@@ -143,21 +80,29 @@ export async function GET(request) {
   let business = aboutMe.CurrentOrganizationName || null;
   let title = aboutMe.Title || null;
   let type = null;
+  let organizationContactId = null;
 
-  if (oauthContactId) {
+  async function applyContactOrgs(personContactId) {
     try {
       const contactOrgs = await fetchJson(
-        `${baseUrl}/api/ContactOverview/${oauthContactId}/ContactOrgs/`,
+        `${baseUrl}/api/ContactOverview/${personContactId}/ContactOrgs/`,
         { method: "GET", headers: getApiHeaders(apiKey) },
+        DEFAULT_TIMEOUT_MS,
       );
-      if (contactOrgs.response.ok) {
-        const firstOrg = readResults(contactOrgs.json)?.[0] || null;
-        const details = extractOrgDetails(firstOrg);
-        business = details.business || business;
-        title = details.title || title;
-        type = details.type || type;
-      }
+      if (!contactOrgs.response.ok) return;
+
+      const firstOrg = readResults(contactOrgs.json)?.[0] || null;
+      const details = extractOrgDetails(firstOrg);
+      business = details.business || business;
+      title = details.title || title;
+      type = details.type || type;
+      organizationContactId =
+        extractOrganizationContactId(firstOrg, personContactId) || organizationContactId;
     } catch {}
+  }
+
+  if (oauthContactId) {
+    await applyContactOrgs(oauthContactId);
   } else if (normalizedEmail) {
     try {
       const pageSize = 500;
@@ -188,17 +133,7 @@ export async function GET(request) {
       }
 
       if (matchedContact?.ContactId) {
-        const contactOrgs = await fetchJson(
-          `${baseUrl}/api/ContactOverview/${matchedContact.ContactId}/ContactOrgs/`,
-          { method: "GET", headers: getApiHeaders(apiKey) },
-        );
-        if (contactOrgs.response.ok) {
-          const firstOrg = readResults(contactOrgs.json)?.[0] || null;
-          const details = extractOrgDetails(firstOrg);
-          business = details.business || business;
-          title = details.title || title;
-          type = details.type || type;
-        }
+        await applyContactOrgs(matchedContact.ContactId);
       }
     } catch {
     }
@@ -212,6 +147,7 @@ export async function GET(request) {
       name: fullName,
       email,
       contactId: oauthContactId || matchedContact?.ContactId || null,
+      organizationContactId,
       business,
       title,
       type,

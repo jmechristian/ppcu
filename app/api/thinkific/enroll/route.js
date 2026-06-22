@@ -6,6 +6,10 @@ import {
   getPpcuGroupName,
   resolveThinkificNumericUserId,
 } from "../../../lib/thinkific-group-users";
+import {
+  enrollUserInCourses,
+  getBundleCourseIds,
+} from "../../../lib/thinkific-enrollments";
 
 const THINKIFIC_GRAPHQL_URL =
   process.env.THINKIFIC_GRAPHQL_URL || "https://api.thinkific.com/stable/graphql";
@@ -157,21 +161,26 @@ export async function POST(request) {
     const returnTo = clean(body?.return_to);
     const contactId = Number(body?.contact_id);
     const contactName = clean(body?.contact_name);
+    const mode = clean(body?.mode).toLowerCase();
+    const isBackground = mode === "background";
     const shouldEnrollGrowthzone =
       body?.trigger_growthzone_enrollment === true ||
       String(body?.trigger_growthzone_enrollment || "").toLowerCase() === "true";
 
-    if (!email || !firstName || !lastName || !returnTo) {
+    if (!email || !firstName || !lastName || (!isBackground && !returnTo)) {
       logEnrollEvent("request.failed.validation", {
         email: maskEmail(email),
         hasFirstName: Boolean(firstName),
         hasLastName: Boolean(lastName),
         hasReturnTo: Boolean(returnTo),
+        mode: mode || "default",
       });
       return NextResponse.json(
         {
           message: "error",
-          error: "email, first_name, last_name, and return_to are required.",
+          error: isBackground
+            ? "email, first_name, and last_name are required."
+            : "email, first_name, last_name, and return_to are required.",
         },
         { status: 400 },
       );
@@ -388,6 +397,70 @@ export async function POST(request) {
       groupName: ppcuGroupName,
       alreadyMember: Boolean(groupResult.alreadyMember),
     });
+
+    if (isBackground) {
+      const courseIds = await getBundleCourseIds({ bearerApiKey });
+      if (courseIds.length === 0) {
+        logEnrollEvent("request.failed.course-enroll", {
+          email: maskEmail(email),
+          userId: thinkificUserId,
+          error: "No bundle courses resolved for enrollment.",
+        });
+        return NextResponse.json(
+          {
+            message: "error",
+            error: "Unable to resolve Thinkific bundle courses for enrollment.",
+          },
+          { status: 502 },
+        );
+      }
+
+      const courseEnroll = await enrollUserInCourses({
+        userId: thinkificUserId,
+        courseIds,
+        restApiKey,
+        subdomain,
+      });
+
+      if (!courseEnroll.ok) {
+        logEnrollEvent("request.failed.course-enroll", {
+          email: maskEmail(email),
+          userId: thinkificUserId,
+          enrolledCount: courseEnroll.enrolledCount,
+          totalCourses: courseIds.length,
+          error: courseEnroll.error || "Thinkific course enrollment failed.",
+        });
+        return NextResponse.json(
+          {
+            message: "error",
+            error: courseEnroll.error || "Thinkific course enrollment failed.",
+          },
+          { status: 502 },
+        );
+      }
+
+      logEnrollEvent("request.succeeded", {
+        email: maskEmail(email),
+        mode: "background",
+        userCreated: Boolean(createdUserId),
+        userId: thinkificUserId,
+        groupAdded: true,
+        groupAlreadyMember: Boolean(groupResult.alreadyMember),
+        coursesEnrolled: courseEnroll.enrolledCount,
+        totalCourses: courseIds.length,
+      });
+
+      return NextResponse.json({
+        message: "success",
+        enrolled: true,
+        userCreated: Boolean(createdUserId),
+        userId: thinkificUserId,
+        groupAdded: true,
+        groupAlreadyMember: Boolean(groupResult.alreadyMember),
+        coursesEnrolled: courseEnroll.enrolledCount,
+        totalCourses: courseIds.length,
+      });
+    }
 
     const nowSeconds = Math.floor(Date.now() / 1000);
     const payload = {

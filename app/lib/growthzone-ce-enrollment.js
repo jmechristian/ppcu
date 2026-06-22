@@ -3,6 +3,11 @@ const DEFAULT_CERTIFICATION_SALEABLE_ITEM_ID = 467095;
 const DEFAULT_CERTIFICATION_SALEABLE_ITEM_NAME = "Demo CE";
 const DEFAULT_CERTIFICATION_FEE_DESCRIPTION = "Demo CE Fee Item";
 const DEFAULT_CERTIFICATION_STATUS_ID = 3;
+const DEFAULT_CERTIFICATION_NAME = "Folding Carton Essentials";
+
+function getCertificationName() {
+  return clean(process.env.GROWTHZONE_CERTIFICATION_NAME) || DEFAULT_CERTIFICATION_NAME;
+}
 
 function trimSlash(value) {
   if (!value) return "";
@@ -166,9 +171,14 @@ export async function getContactCertifications(contactId, timeoutMs = DEFAULT_TI
   }));
 }
 
-function findEnrollmentForType(rows, certificationTypeId) {
+function findEnrollmentForType(rows, certificationTypeId, certificationName) {
+  const targetName = clean(certificationName).toLowerCase();
   return (
-    rows.find((row) => Number(row.certificationTypeId) === Number(certificationTypeId)) || null
+    rows.find((row) => {
+      if (Number(row.certificationTypeId) === Number(certificationTypeId)) return true;
+      if (targetName && clean(row.certificationName).toLowerCase() === targetName) return true;
+      return false;
+    }) || null
   );
 }
 
@@ -283,12 +293,14 @@ export async function discoverGrowthzoneEnrollment({
   contactId,
   contactName,
   certificationTypeId,
+  certificationName = getCertificationName(),
   timeoutMs = DEFAULT_TIMEOUT_MS,
   allowWriteProbe = false,
 }) {
   const normalizedEmail = normalizeEmail(email);
   const normalizedContactId = normalizeContactId(contactId);
   const typeId = Number(certificationTypeId);
+  const targetCertName = clean(certificationName);
   if ((!normalizedEmail && !normalizedContactId) || !Number.isFinite(typeId) || typeId <= 0) {
     throw new Error("contactId or email plus certificationTypeId are required for discovery.");
   }
@@ -313,7 +325,7 @@ export async function discoverGrowthzoneEnrollment({
   }
 
   const before = await getContactCertifications(contact.contactId, timeoutMs);
-  const existing = findEnrollmentForType(before, typeId);
+  const existing = findEnrollmentForType(before, typeId, targetCertName);
   if (existing) {
     return {
       ok: true,
@@ -376,7 +388,7 @@ export async function discoverGrowthzoneEnrollment({
       }
 
       const after = await getContactCertifications(contact.contactId, timeoutMs);
-      const enrolled = findEnrollmentForType(after, typeId);
+      const enrolled = findEnrollmentForType(after, typeId, targetCertName);
       if (enrolled) {
         return {
           ok: true,
@@ -407,6 +419,7 @@ export async function enrollGrowthzoneContactInCertification({
   contactId,
   contactName,
   certificationTypeId,
+  certificationName = getCertificationName(),
   timeoutMs = DEFAULT_TIMEOUT_MS,
   dryRun = false,
 }) {
@@ -429,6 +442,7 @@ export async function enrollGrowthzoneContactInCertification({
     contactId: normalizedContactId,
     contactName: clean(contactName),
     certificationTypeId: typeId,
+    certificationName: getCertificationName(),
     timeoutMs,
     allowWriteProbe: !dryRun,
   });

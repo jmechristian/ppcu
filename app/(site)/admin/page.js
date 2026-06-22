@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useGrowthzoneProfile } from "../../providers/GrowthzoneProfileContext";
 import InteriorPageLayout from "../InteriorPageLayout";
@@ -14,49 +14,187 @@ function formatDate(value) {
   });
 }
 
-export default function LearningPage() {
+function isPrimaryType(type) {
+  return /primary/i.test(String(type || ""));
+}
+
+function splitName(fullName) {
+  const parts = String(fullName || "").trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return { firstName: "", lastName: "" };
+  if (parts.length === 1) return { firstName: parts[0], lastName: "" };
+  return { firstName: parts[0], lastName: parts.slice(1).join(" ") };
+}
+
+function isActiveLearner(row) {
+  const pct = String(row?.percentage || "").replace(/%/g, "").trim();
+  const n = Number(pct);
+  if (Number.isFinite(n) && n > 0) return true;
+  if (row?.certificationContactId) return true;
+  if (row?.statusText && !/nonmember/i.test(String(row.statusText))) return true;
+  return false;
+}
+
+const STAFF_PAGE_SIZE = 25;
+
+export default function AdminPage() {
   const { profile } = useGrowthzoneProfile();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [payload, setPayload] = useState(null);
+  const [checkoutUrl, setCheckoutUrl] = useState("");
+  const [enrollError, setEnrollError] = useState("");
+  const [enrollingContactId, setEnrollingContactId] = useState(null);
+  const [learnerPage, setLearnerPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState("");
+  const [searchedTerm, setSearchedTerm] = useState("");
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const response = await fetch("/api/growthzone/learning", {
-          cache: "no-store",
-          credentials: "include",
-        });
-        if (!response.ok) throw new Error(`Request failed (${response.status})`);
-        const json = await response.json();
-        if (cancelled) return;
-        if (!json?.connected) {
-          setError("Please sign in to view your learning dashboard.");
-        } else {
-          setPayload(json);
-        }
-      } catch (err) {
-        if (!cancelled) setError(err?.message || "Failed to load learning data.");
-      } finally {
-        if (!cancelled) setLoading(false);
+  const loadAdminData = useCallback(async ({ showLoading = true } = {}) => {
+    if (showLoading) setLoading(true);
+    try {
+      const [adminRes, outlineRes] = await Promise.all([
+        fetch("/api/growthzone/admin", { cache: "no-store", credentials: "include" }),
+        fetch("/api/thinkific/course-outline", { cache: "no-store" }),
+      ]);
+
+      if (!adminRes.ok) throw new Error(`Request failed (${adminRes.status})`);
+      const json = await adminRes.json();
+
+      if (!json?.connected) {
+        setError("Please sign in to view the admin dashboard.");
+      } else {
+        setError("");
+        setPayload(json);
       }
-    })();
-    return () => {
-      cancelled = true;
-    };
+
+      const outlineJson = await outlineRes.json().catch(() => ({}));
+      setCheckoutUrl(outlineJson?.data?.product?.checkoutUrl || "");
+    } catch (err) {
+      setError(err?.message || "Failed to load admin data.");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const certifications = payload?.certifications || [];
-  const learners = payload?.manageLearners || [];
-  const learningProfile = payload?.profile || {};
+  useEffect(() => {
+    loadAdminData();
+  }, [loadAdminData]);
+
+  const adminProfile = payload?.profile || {};
+  const view = payload?.view || "limited";
+  const activeLearners = payload?.activeLearners || [];
+  const relatedContacts = payload?.relatedContacts || [];
+  const staffLearners = payload?.manageLearners || [];
+
+  const staffActiveLearners = useMemo(
+    () => staffLearners.filter(isActiveLearner),
+    [staffLearners],
+  );
+  const enrolledContactIds = useMemo(() => {
+    const set = new Set();
+    for (const row of staffLearners) {
+      const id = Number(row?.contactId);
+      if (Number.isFinite(id) && id > 0) set.add(id);
+    }
+    return set;
+  }, [staffLearners]);
+  const staffTotalPages = Math.max(1, Math.ceil(staffActiveLearners.length / STAFF_PAGE_SIZE));
+  const staffCurrentPage = Math.min(learnerPage, staffTotalPages);
+  const staffPageRows = staffActiveLearners.slice(
+    (staffCurrentPage - 1) * STAFF_PAGE_SIZE,
+    staffCurrentPage * STAFF_PAGE_SIZE,
+  );
 
   const fullName = useMemo(
     () =>
       [profile.firstName, profile.lastName].filter(Boolean).join(" ") ||
-      [learningProfile.firstName, learningProfile.lastName].filter(Boolean).join(" "),
-    [learningProfile.firstName, learningProfile.lastName, profile.firstName, profile.lastName],
+      [adminProfile.firstName, adminProfile.lastName].filter(Boolean).join(" ") ||
+      adminProfile.name ||
+      "",
+    [adminProfile.firstName, adminProfile.lastName, adminProfile.name, profile.firstName, profile.lastName],
   );
+
+  async function handleEnrollContact(contact) {
+    if (enrollingContactId) return;
+
+    const contactId = Number(contact?.contactId);
+    const email = String(contact?.email || "").trim().toLowerCase();
+    const contactName = String(contact?.name || "").trim();
+    const fallback = splitName(contactName);
+    const firstName = String(contact?.firstName || fallback.firstName || "").trim();
+    const lastName = String(contact?.lastName || fallback.lastName || "").trim();
+
+    if (!firstName || !lastName || !email) {
+      setEnrollError("Missing contact email or name required for enrollment.");
+      return;
+    }
+
+    setEnrollError("");
+    setEnrollingContactId(contactId);
+
+    try {
+      const response = await fetch("/api/thinkific/enroll", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          first_name: firstName,
+          last_name: lastName,
+          contact_id: Number.isFinite(contactId) && contactId > 0 ? contactId : null,
+          contact_name: contactName,
+          trigger_growthzone_enrollment: true,
+          mode: "background",
+        }),
+      });
+      const json = await response.json().catch(() => ({}));
+
+      if (!response.ok || !json?.enrolled) {
+        throw new Error(json?.error || "Unable to complete enrollment.");
+      }
+
+      setSearchResults((prev) =>
+        prev.map((row) =>
+          Number(row.contactId) === contactId ? { ...row, isEnrolled: true } : row,
+        ),
+      );
+      await loadAdminData({ showLoading: false });
+    } catch (err) {
+      setEnrollError(err?.message || "Unable to complete enrollment.");
+    } finally {
+      setEnrollingContactId(null);
+    }
+  }
+
+  async function handleSearch(event) {
+    event?.preventDefault?.();
+    const q = searchTerm.trim();
+    if (q.length < 2) {
+      setSearchError("Enter at least 2 characters to search.");
+      return;
+    }
+
+    setSearchError("");
+    setSearching(true);
+    try {
+      const response = await fetch(
+        `/api/growthzone/contacts/search?q=${encodeURIComponent(q)}`,
+        { cache: "no-store", credentials: "include" },
+      );
+      const json = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(json?.message || `Search failed (${response.status}).`);
+      if (json?.allowed === false) throw new Error("You do not have access to contact search.");
+
+      setSearchResults(Array.isArray(json?.results) ? json.results : []);
+      setSearchedTerm(q);
+    } catch (err) {
+      setSearchError(err?.message || "Search failed.");
+      setSearchResults([]);
+    } finally {
+      setSearching(false);
+    }
+  }
 
   return (
     <InteriorPageLayout activeItem="admin">
@@ -68,15 +206,15 @@ export default function LearningPage() {
             <div className="text-red-300">{error}</div>
           ) : (
             <div className="space-y-2">
-              <div className="text-2xl font-bold">{`Welcome, ${fullName || "Learner"}`}</div>
+              <div className="text-2xl font-bold">{`Welcome, ${fullName || "Admin"}`}</div>
               <div className="text-sm text-white/90">
-                {[profile.title || learningProfile.title, profile.business || learningProfile.business]
+                {[profile.title || adminProfile.title, profile.business || adminProfile.business]
                   .filter(Boolean)
                   .join(" - ")}
               </div>
-              {(profile.type || learningProfile.type) && (
+              {(profile.type || adminProfile.type) && (
                 <span className="inline-flex items-center rounded-full bg-brand-green px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-white">
-                  {profile.type || learningProfile.type}
+                  {profile.type || adminProfile.type}
                 </span>
               )}
             </div>
@@ -84,124 +222,278 @@ export default function LearningPage() {
         </div>
       </section>
 
-      <section className="rounded-xl border border-gray-200 bg-white p-6">
-        <h2 className="text-xl font-bold text-gray-900">My Certificates</h2>
-        {loading ? (
-          <p className="mt-4 text-gray-500">Loading certificates...</p>
-        ) : certifications.length === 0 ? (
-          <div className="mt-4 flex items-center justify-between gap-4">
-            <p className="text-gray-600">No certificates found for your account.</p>
-            <Link
-              href="/"
-              className="inline-flex items-center rounded bg-brand-blue px-4 py-2 text-sm font-semibold text-white"
-            >
-              Enroll
-            </Link>
-          </div>
-        ) : (
-          <div className="mt-4 grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {certifications.map((cert) => (
-              <article
-                key={`${cert.certificationContactId}-${cert.certificationTypeId}`}
-                className="rounded border border-gray-200 p-4 bg-gray-50"
-              >
-                <h3 className="font-semibold text-gray-900">{cert.certificationName}</h3>
-                <div className="mt-2 text-xs text-gray-600 space-y-1">
-                  <div>Status: {cert.statusText || cert.status || "-"}</div>
-                  <div>Progress: {cert.percentage || "-"}</div>
-                  <div>Hours: {cert.hoursEarned ?? 0}</div>
-                  <div>Credits: {cert.creditsEarned ?? 0}</div>
-                  <div>Started: {formatDate(cert.startDate)}</div>
-                  <div>Completed: {formatDate(cert.completedDate)}</div>
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
-      </section>
+      {enrollError && (
+        <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {enrollError}
+        </div>
+      )}
 
-      <section className="rounded-xl border border-gray-200 bg-white p-6">
-        <h2 className="text-xl font-bold text-gray-900">Manage Learners</h2>
-        <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <input
-            type="text"
-            placeholder="Search learners..."
-            className="w-full sm:max-w-sm rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700"
-          />
-          <button
-            type="button"
-            className="inline-flex items-center justify-center rounded bg-brand-blue px-4 py-2 text-sm font-semibold text-white"
-          >
-            Add Learner
-          </button>
-        </div>
-        <div className="mt-4 overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-200 text-left text-gray-600">
-                <th className="py-2 pr-4">Learner</th>
-                <th className="py-2 pr-4">Certification</th>
-                <th className="py-2 pr-4">Status</th>
-                <th className="py-2 pr-4">Progress</th>
-                <th className="py-2 pr-4">Hours</th>
-                <th className="py-2 pr-4">Credits</th>
-                <th className="py-2 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {learners.slice(0, 50).map((row) => (
-                <tr
-                  key={`${row.contactId}-${row.certificationContactId}-${row.certificationTypeId}`}
-                  className="border-b border-gray-100 text-gray-800"
+      {view === "primary" && (
+        <>
+          <section className="rounded-xl border border-gray-200 bg-white p-6">
+            <h2 className="text-xl font-bold text-gray-900">Active Learners</h2>
+            <p className="mt-1 text-sm text-gray-600">
+              Organization members with certification activity.
+            </p>
+            <div className="mt-4 overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-200 text-left text-gray-600">
+                    <th className="py-2 pr-4">Learner</th>
+                    <th className="py-2 pr-4">Certification</th>
+                    <th className="py-2 pr-4">Status</th>
+                    <th className="py-2 pr-4">Progress</th>
+                    <th className="py-2 pr-4">Started</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {activeLearners.map((row) => (
+                    <tr
+                      key={`${row.contactId}-${row.certificationContactId}-${row.certificationTypeId}`}
+                      className="border-b border-gray-100 text-gray-800"
+                    >
+                      <td className="py-2 pr-4">{row.contactName || "-"}</td>
+                      <td className="py-2 pr-4">{row.certificationName || "-"}</td>
+                      <td className="py-2 pr-4">{row.statusText || row.status || "-"}</td>
+                      <td className="py-2 pr-4">{row.percentage || "-"}</td>
+                      <td className="py-2 pr-4">{formatDate(row.startDate)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {!loading && activeLearners.length === 0 && (
+                <p className="py-4 text-gray-500">No active learners in your organization yet.</p>
+              )}
+            </div>
+          </section>
+
+          <section className="rounded-xl border border-gray-200 bg-white p-6">
+            <h2 className="text-xl font-bold text-gray-900">Organization Contacts</h2>
+            <p className="mt-1 text-sm text-gray-600">
+              All contacts linked to {adminProfile.business || "your organization"}.
+            </p>
+            <div className="mt-4 overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-200 text-left text-gray-600">
+                    <th className="py-2 pr-4">Name</th>
+                    <th className="py-2 pr-4">Title</th>
+                    <th className="py-2 pr-4">Type</th>
+                    <th className="py-2 pr-4">Email</th>
+                    <th className="py-2 pr-4">Enrolled</th>
+                    <th className="py-2 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {relatedContacts.map((contact) => {
+                    const contactId = Number(contact.contactId);
+                    const isEnrolling = enrollingContactId === contactId;
+                    const canEnroll = Boolean(
+                      contact.email && !contact.isEnrolled && !isPrimaryType(contact.type),
+                    );
+
+                    return (
+                      <tr
+                        key={contact.contactRoleId || contact.contactId}
+                        className="border-b border-gray-100 text-gray-800"
+                      >
+                        <td className="py-2 pr-4">{contact.name || "-"}</td>
+                        <td className="py-2 pr-4">{contact.title || "-"}</td>
+                        <td className="py-2 pr-4">{contact.type || "-"}</td>
+                        <td className="py-2 pr-4">{contact.email || "-"}</td>
+                        <td className="py-2 pr-4">{contact.isEnrolled ? "Yes" : "No"}</td>
+                        <td className="py-2 text-right">
+                          {contact.isEnrolled ? (
+                            <span className="text-gray-500">Enrolled</span>
+                          ) : isPrimaryType(contact.type) ? (
+                            <span className="text-gray-500">Primary</span>
+                          ) : (
+                            <button
+                              type="button"
+                              disabled={!canEnroll || isEnrolling}
+                              onClick={() => handleEnrollContact(contact)}
+                              className="inline-flex items-center rounded bg-brand-blue px-3 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              {isEnrolling ? "Enrolling..." : "Enroll"}
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              {!loading && relatedContacts.length === 0 && (
+                <p className="py-4 text-gray-500">No organization contacts returned.</p>
+              )}
+            </div>
+          </section>
+        </>
+      )}
+
+      {view === "staff" && (
+        <>
+          <section className="rounded-xl border border-gray-200 bg-white p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Active Learners</h2>
+                <p className="mt-1 text-sm text-gray-600">
+                  All learners with certification activity.
+                </p>
+              </div>
+              {staffActiveLearners.length > 0 && (
+                <span className="text-sm text-gray-500">
+                  {staffActiveLearners.length} total
+                </span>
+              )}
+            </div>
+            <div className="mt-4 overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-200 text-left text-gray-600">
+                    <th className="py-2 pr-4">Learner</th>
+                    <th className="py-2 pr-4">Certification</th>
+                    <th className="py-2 pr-4">Status</th>
+                    <th className="py-2 pr-4">Progress</th>
+                    <th className="py-2 pr-4">Hours</th>
+                    <th className="py-2 pr-4">Credits</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {staffPageRows.map((row) => (
+                    <tr
+                      key={`${row.contactId}-${row.certificationContactId}-${row.certificationTypeId}`}
+                      className="border-b border-gray-100 text-gray-800"
+                    >
+                      <td className="py-2 pr-4">{row.contactName || "-"}</td>
+                      <td className="py-2 pr-4">{row.certificationName || "-"}</td>
+                      <td className="py-2 pr-4">{row.statusText || row.status || "-"}</td>
+                      <td className="py-2 pr-4">{row.percentage || "-"}</td>
+                      <td className="py-2 pr-4">{row.hoursEarned ?? 0}</td>
+                      <td className="py-2 pr-4">{row.creditsEarned ?? 0}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {!loading && staffActiveLearners.length === 0 && (
+                <p className="py-4 text-gray-500">No active learners yet.</p>
+              )}
+            </div>
+            {staffTotalPages > 1 && (
+              <div className="mt-4 flex items-center justify-between">
+                <button
+                  type="button"
+                  disabled={staffCurrentPage <= 1}
+                  onClick={() => setLearnerPage((p) => Math.max(1, p - 1))}
+                  className="rounded border border-gray-300 px-3 py-1.5 text-sm font-semibold text-gray-700 disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  <td className="py-2 pr-4">{row.contactName || "-"}</td>
-                  <td className="py-2 pr-4">{row.certificationName || "-"}</td>
-                  <td className="py-2 pr-4">{row.statusText || row.status || "-"}</td>
-                  <td className="py-2 pr-4">{row.percentage || "-"}</td>
-                  <td className="py-2 pr-4">{row.hoursEarned ?? 0}</td>
-                  <td className="py-2 pr-4">{row.creditsEarned ?? 0}</td>
-                  <td className="py-2 text-right">
-                    <div className="inline-flex items-center gap-2">
-                      <button
-                        type="button"
-                        aria-label="Play learner"
-                        className="inline-flex h-8 w-8 items-center justify-center rounded border border-gray-300 bg-white text-gray-700"
-                      >
-                        <svg
-                          className="h-4 w-4"
-                          viewBox="0 0 24 24"
-                          fill="currentColor"
-                          aria-hidden="true"
+                  Previous
+                </button>
+                <span className="text-sm text-gray-600">
+                  Page {staffCurrentPage} of {staffTotalPages}
+                </span>
+                <button
+                  type="button"
+                  disabled={staffCurrentPage >= staffTotalPages}
+                  onClick={() => setLearnerPage((p) => Math.min(staffTotalPages, p + 1))}
+                  className="rounded border border-gray-300 px-3 py-1.5 text-sm font-semibold text-gray-700 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Next
+                </button>
+              </div>
+            )}
+          </section>
+
+          <section className="rounded-xl border border-gray-200 bg-white p-6">
+            <h2 className="text-xl font-bold text-gray-900">Find &amp; Enroll a Contact</h2>
+            <p className="mt-1 text-sm text-gray-600">
+              Search all GrowthZone contacts by name, company, or email.
+            </p>
+            <form onSubmit={handleSearch} className="mt-4 flex gap-2">
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search contacts..."
+                className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-brand-blue focus:outline-none"
+              />
+              <button
+                type="submit"
+                disabled={searching || searchTerm.trim().length < 2}
+                className="inline-flex items-center rounded bg-brand-blue px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {searching ? "Searching..." : "Search"}
+              </button>
+            </form>
+
+            {searchError && (
+              <p className="mt-3 text-sm text-red-600">{searchError}</p>
+            )}
+
+            {searchResults.length > 0 && (
+              <div className="mt-4 overflow-x-auto">
+                <table className="min-w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-200 text-left text-gray-600">
+                      <th className="py-2 pr-4">Name</th>
+                      <th className="py-2 pr-4">Company</th>
+                      <th className="py-2 pr-4">Email</th>
+                      <th className="py-2 text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {searchResults.map((contact) => {
+                      const contactId = Number(contact.contactId);
+                      const isEnrolling = enrollingContactId === contactId;
+                      const isEnrolled =
+                        contact.isEnrolled || enrolledContactIds.has(contactId);
+                      const canEnroll = Boolean(contact.email && !isEnrolled);
+                      return (
+                        <tr
+                          key={contact.contactId}
+                          className="border-b border-gray-100 text-gray-800"
                         >
-                          <path d="M8 5v14l11-7z" />
-                        </svg>
-                      </button>
-                      <button
-                        type="button"
-                        aria-label="Pause learner"
-                        className="inline-flex h-8 w-8 items-center justify-center rounded border border-gray-300 bg-white text-gray-700"
-                      >
-                        <svg
-                          className="h-4 w-4"
-                          viewBox="0 0 24 24"
-                          fill="currentColor"
-                          aria-hidden="true"
-                        >
-                          <path d="M7 5h4v14H7zM13 5h4v14h-4z" />
-                        </svg>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {!loading && learners.length === 0 && (
-            <p className="py-4 text-gray-500">No learner tracking rows returned.</p>
-          )}
-        </div>
-      </section>
+                          <td className="py-2 pr-4">{contact.name || "-"}</td>
+                          <td className="py-2 pr-4">{contact.company || "-"}</td>
+                          <td className="py-2 pr-4">{contact.email || "-"}</td>
+                          <td className="py-2 text-right">
+                            {isEnrolled ? (
+                              <span className="text-gray-500">Enrolled</span>
+                            ) : (
+                              <button
+                                type="button"
+                                disabled={!canEnroll || isEnrolling}
+                                onClick={() => handleEnrollContact(contact)}
+                                title={contact.email ? "" : "No email on file"}
+                                className="inline-flex items-center rounded bg-brand-blue px-3 py-1.5 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                {isEnrolling ? "Enrolling..." : "Enroll"}
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {!searching && searchedTerm && searchResults.length === 0 && !searchError && (
+              <p className="mt-4 text-gray-500">No contacts found for “{searchedTerm}”.</p>
+            )}
+          </section>
+        </>
+      )}
+
+      {view === "limited" && !loading && !error && (
+        <section className="rounded-xl border border-gray-200 bg-white p-6">
+          <p className="text-gray-600">{payload?.message || "Admin access is limited for this account."}</p>
+          <Link href="/learning" className="mt-4 inline-flex text-sm font-semibold text-brand-blue">
+            Go to My Learning
+          </Link>
+        </section>
+      )}
     </InteriorPageLayout>
   );
 }
-
