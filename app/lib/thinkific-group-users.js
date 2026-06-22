@@ -84,10 +84,13 @@ export async function resolveThinkificNumericUserId({
   const fromRestCreate = normalizeThinkificNumericUserId(restCreatedId);
   if (fromRestCreate) return fromRestCreate;
 
-  const fromGraphql = normalizeThinkificNumericUserId(graphqlId);
-  if (fromGraphql) return fromGraphql;
+  // The Thinkific REST user id (used by enrollment/group endpoints) is NOT the
+  // same as the GraphQL global id. The GraphQL id only sometimes decodes to the
+  // REST id, so always prefer the canonical REST lookup by email first.
+  const fromRestLookup = await lookupThinkificUserIdByEmail({ email, restApiKey, subdomain });
+  if (fromRestLookup) return fromRestLookup;
 
-  return lookupThinkificUserIdByEmail({ email, restApiKey, subdomain });
+  return normalizeThinkificNumericUserId(graphqlId);
 }
 
 export async function addThinkificUserToGroups({

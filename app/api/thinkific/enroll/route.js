@@ -7,8 +7,8 @@ import {
   resolveThinkificNumericUserId,
 } from "../../../lib/thinkific-group-users";
 import {
-  enrollUserInCourses,
-  getBundleCourseIds,
+  enrollUserInBundle,
+  getPpcuBundleId,
 } from "../../../lib/thinkific-enrollments";
 
 const THINKIFIC_GRAPHQL_URL =
@@ -399,41 +399,32 @@ export async function POST(request) {
     });
 
     if (isBackground) {
-      const courseIds = await getBundleCourseIds({ bearerApiKey });
-      if (courseIds.length === 0) {
-        logEnrollEvent("request.failed.course-enroll", {
-          email: maskEmail(email),
-          userId: thinkificUserId,
-          error: "No bundle courses resolved for enrollment.",
-        });
-        return NextResponse.json(
-          {
-            message: "error",
-            error: "Unable to resolve Thinkific bundle courses for enrollment.",
-          },
-          { status: 502 },
-        );
-      }
-
-      const courseEnroll = await enrollUserInCourses({
+      const bundleId = getPpcuBundleId();
+      logEnrollEvent("request.bundle-enroll.started", {
+        email: maskEmail(email),
         userId: thinkificUserId,
-        courseIds,
+        bundleId,
+      });
+
+      const bundleEnroll = await enrollUserInBundle({
+        userId: thinkificUserId,
+        bundleId,
         restApiKey,
         subdomain,
       });
 
-      if (!courseEnroll.ok) {
-        logEnrollEvent("request.failed.course-enroll", {
+      if (!bundleEnroll.ok) {
+        logEnrollEvent("request.failed.bundle-enroll", {
           email: maskEmail(email),
           userId: thinkificUserId,
-          enrolledCount: courseEnroll.enrolledCount,
-          totalCourses: courseIds.length,
-          error: courseEnroll.error || "Thinkific course enrollment failed.",
+          bundleId,
+          status: bundleEnroll.status,
+          error: bundleEnroll.error || "Thinkific bundle enrollment failed.",
         });
         return NextResponse.json(
           {
             message: "error",
-            error: courseEnroll.error || "Thinkific course enrollment failed.",
+            error: bundleEnroll.error || "Thinkific bundle enrollment failed.",
           },
           { status: 502 },
         );
@@ -446,8 +437,8 @@ export async function POST(request) {
         userId: thinkificUserId,
         groupAdded: true,
         groupAlreadyMember: Boolean(groupResult.alreadyMember),
-        coursesEnrolled: courseEnroll.enrolledCount,
-        totalCourses: courseIds.length,
+        bundleId,
+        bundleAlreadyEnrolled: Boolean(bundleEnroll.alreadyEnrolled),
       });
 
       return NextResponse.json({
@@ -457,8 +448,8 @@ export async function POST(request) {
         userId: thinkificUserId,
         groupAdded: true,
         groupAlreadyMember: Boolean(groupResult.alreadyMember),
-        coursesEnrolled: courseEnroll.enrolledCount,
-        totalCourses: courseIds.length,
+        bundleId,
+        bundleAlreadyEnrolled: Boolean(bundleEnroll.alreadyEnrolled),
       });
     }
 

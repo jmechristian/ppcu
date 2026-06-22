@@ -101,6 +101,49 @@ function isAlreadyEnrolledResponse(status, json) {
   return false;
 }
 
+export async function enrollUserInBundle({ userId, bundleId, restApiKey, subdomain }) {
+  const numericUserId = toNumericCourseId(userId);
+  const id = clean(bundleId) || getPpcuBundleId();
+
+  if (!numericUserId || !id) {
+    return { ok: false, status: 400, bundleId: id, error: "Missing user or bundle id." };
+  }
+  if (!restApiKey || !subdomain) {
+    return { ok: false, status: 500, bundleId: id, error: "Missing Thinkific REST credentials." };
+  }
+
+  const response = await fetch(
+    `https://api.thinkific.com/api/public/v1/bundles/${id}/enrollments`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Auth-API-Key": restApiKey,
+        "X-Auth-Subdomain": subdomain,
+      },
+      body: JSON.stringify({
+        user_id: numericUserId,
+        activated_at: new Date().toISOString(),
+      }),
+      cache: "no-store",
+    },
+  );
+
+  const json = await response.json().catch(() => ({}));
+  const alreadyEnrolled = isAlreadyEnrolledResponse(response.status, json);
+
+  if (response.ok || alreadyEnrolled) {
+    return { ok: true, status: response.status, bundleId: id, alreadyEnrolled };
+  }
+
+  return {
+    ok: false,
+    status: response.status,
+    bundleId: id,
+    error: clean(json?.message) || `Bundle enrollment failed (${response.status}).`,
+  };
+}
+
 export async function enrollUserInCourse({ userId, courseId, restApiKey, subdomain }) {
   const numericUserId = toNumericCourseId(userId);
   const numericCourseId = toNumericCourseId(courseId);
