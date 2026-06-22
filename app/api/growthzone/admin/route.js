@@ -10,21 +10,34 @@ import {
   isPrimaryContactType,
   isStaffContactType,
   normalizeOrgContact,
-  normalizeTrackingRow,
   parseCookies,
   readResults,
   splitNameParts,
   toPositiveInt,
   trimSlash,
 } from "@/app/lib/growthzone-api";
+import {
+  fetchAllBundleLearners,
+  fetchBundleProgressByEmail,
+  getPpcuBundleId,
+} from "@/app/lib/thinkific-enrollments";
 
-function hasActiveProgress(trackingRow) {
-  const pct = String(trackingRow?.percentage || "").replace(/%/g, "").trim();
-  const n = Number(pct);
-  if (Number.isFinite(n) && n > 0) return true;
-  if (trackingRow?.certificationContactId) return true;
-  if (trackingRow?.statusText && !/nonmember/i.test(String(trackingRow.statusText))) return true;
-  return false;
+function getThinkificRestCreds() {
+  const restApiKey = String(
+    process.env.THINKIFIC_REST_API_KEY ||
+      process.env.NEXT_THINKIFIC_API_KEY ||
+      "",
+  ).trim();
+  const subdomain = String(
+    process.env.THINKIFIC_SUBDOMAIN || process.env.NEXT_THINKIFIC_SUBDOMAIN || "",
+  ).trim();
+  return { restApiKey, subdomain };
+}
+
+function formatPercent(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "";
+  return `${Math.round(n)}%`;
 }
 
 function pickPrimaryCert(contactCerts, trackingRows) {
@@ -119,12 +132,15 @@ export async function GET(request) {
   };
 
   if (isStaffContactType(roleType)) {
-    const manageLearners = await fetchAllCertificationTracking(baseUrl, apiKey);
+    const { restApiKey, subdomain } = getThinkificRestCreds();
+    const bundleId = getPpcuBundleId();
+    const staffLearners = await fetchAllBundleLearners({ bundleId, restApiKey, subdomain });
     return NextResponse.json({
       connected: true,
       view: "staff",
       profile,
-      manageLearners,
+      bundleId,
+      staffLearners,
     });
   }
 
@@ -161,6 +177,8 @@ export async function GET(request) {
     orgContacts.map((row) => toPositiveInt(row.contactId)).filter(Boolean),
   );
   const trackingByContact = buildTrackingByContactId(trackingRows);
+  const { restApiKey, subdomain } = getThinkificRestCreds();
+  const bundleId = getPpcuBundleId();
 
   const relatedContacts = await Promise.all(
     orgContacts.map(async (contact) => {
@@ -196,12 +214,17 @@ export async function GET(request) {
         lastName = parts.lastName;
       }
 
+      const progress = email
+        ? await fetchBundleProgressByEmail({ email, bundleId, restApiKey, subdomain })
+        : { enrolled: false, percent: 0, completedCourses: 0, totalCourses: 0 };
+
       const primaryCert = pickPrimaryCert(contactCerts, trackingForContact);
-      const isEnrolled = contactCerts.length > 0 || trackingForContact.length > 0;
+      const isEnrolled = progress.enrolled || contactCerts.length > 0 || trackingForContact.length > 0;
 
       return {
         contact,
         contactCerts,
+        progress,
         enriched: {
           ...contact,
           email,
@@ -209,7 +232,10 @@ export async function GET(request) {
           lastName,
           isEnrolled,
           certificationName: primaryCert?.certificationName || "",
-          percentage: primaryCert?.percentage || "",
+          percentage: progress.enrolled ? formatPercent(progress.percent) : "",
+          progressPercent: progress.percent,
+          completedCourses: progress.completedCourses,
+          totalCourses: progress.totalCourses,
           statusText: primaryCert?.statusText || contact.statusText || "",
         },
       };
@@ -219,29 +245,20 @@ export async function GET(request) {
   const relatedContactsOut = relatedContacts.map((row) => row.enriched);
 
   const activeLearners = relatedContacts
-    .filter((row) => {
-      const contactId = toPositiveInt(row.contact.contactId);
-      const trackingForContact = contactId ? trackingByContact.get(contactId) || [] : [];
-      if (trackingForContact.some(hasActiveProgress)) return true;
-      return (row.contactCerts || []).some(hasActiveProgress);
-    })
+    .filter((row) => row.progress?.enrolled)
     .map((row) => {
       const contactId = toPositiveInt(row.contact.contactId);
       const trackingForContact = contactId ? trackingByContact.get(contactId) || [] : [];
       const primaryCert = pickPrimaryCert(row.contactCerts || [], trackingForContact);
-      return buildActiveLearnerRow(row.contact, primaryCert, trackingForContact[0]);
+      const base = buildActiveLearnerRow(row.contact, primaryCert, trackingForContact[0]);
+      return {
+        ...base,
+        percentage: formatPercent(row.progress.percent),
+        progressPercent: row.progress.percent,
+        completedCourses: row.progress.completedCourses,
+        totalCourses: row.progress.totalCourses,
+      };
     });
-
-  const globalActiveLearners = trackingRows
-    .filter((row) => orgContactIds.has(toPositiveInt(row.contactId)))
-    .filter(hasActiveProgress)
-    .map(normalizeTrackingRow);
-
-  for (const row of globalActiveLearners) {
-    const id = toPositiveInt(row.contactId);
-    if (!id || activeLearners.some((learner) => toPositiveInt(learner.contactId) === id)) continue;
-    activeLearners.push(row);
-  }
 
   return NextResponse.json({
     connected: true,

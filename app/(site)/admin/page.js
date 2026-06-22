@@ -25,15 +25,6 @@ function splitName(fullName) {
   return { firstName: parts[0], lastName: parts.slice(1).join(" ") };
 }
 
-function isActiveLearner(row) {
-  const pct = String(row?.percentage || "").replace(/%/g, "").trim();
-  const n = Number(pct);
-  if (Number.isFinite(n) && n > 0) return true;
-  if (row?.certificationContactId) return true;
-  if (row?.statusText && !/nonmember/i.test(String(row.statusText))) return true;
-  return false;
-}
-
 const STAFF_PAGE_SIZE = 25;
 
 export default function AdminPage() {
@@ -86,20 +77,16 @@ export default function AdminPage() {
   const view = payload?.view || "limited";
   const activeLearners = payload?.activeLearners || [];
   const relatedContacts = payload?.relatedContacts || [];
-  const staffLearners = payload?.manageLearners || [];
+  const staffActiveLearners = payload?.staffLearners || [];
 
-  const staffActiveLearners = useMemo(
-    () => staffLearners.filter(isActiveLearner),
-    [staffLearners],
-  );
-  const enrolledContactIds = useMemo(() => {
+  const enrolledEmails = useMemo(() => {
     const set = new Set();
-    for (const row of staffLearners) {
-      const id = Number(row?.contactId);
-      if (Number.isFinite(id) && id > 0) set.add(id);
+    for (const row of staffActiveLearners) {
+      const email = String(row?.email || "").trim().toLowerCase();
+      if (email) set.add(email);
     }
     return set;
-  }, [staffLearners]);
+  }, [staffActiveLearners]);
   const staffTotalPages = Math.max(1, Math.ceil(staffActiveLearners.length / STAFF_PAGE_SIZE));
   const staffCurrentPage = Math.min(learnerPage, staffTotalPages);
   const staffPageRows = staffActiveLearners.slice(
@@ -352,25 +339,21 @@ export default function AdminPage() {
                 <thead>
                   <tr className="border-b border-gray-200 text-left text-gray-600">
                     <th className="py-2 pr-4">Learner</th>
-                    <th className="py-2 pr-4">Certification</th>
-                    <th className="py-2 pr-4">Status</th>
+                    <th className="py-2 pr-4">Email</th>
                     <th className="py-2 pr-4">Progress</th>
-                    <th className="py-2 pr-4">Hours</th>
-                    <th className="py-2 pr-4">Credits</th>
+                    <th className="py-2 pr-4">Courses Completed</th>
                   </tr>
                 </thead>
                 <tbody>
                   {staffPageRows.map((row) => (
                     <tr
-                      key={`${row.contactId}-${row.certificationContactId}-${row.certificationTypeId}`}
+                      key={row.userId}
                       className="border-b border-gray-100 text-gray-800"
                     >
-                      <td className="py-2 pr-4">{row.contactName || "-"}</td>
-                      <td className="py-2 pr-4">{row.certificationName || "-"}</td>
-                      <td className="py-2 pr-4">{row.statusText || row.status || "-"}</td>
-                      <td className="py-2 pr-4">{row.percentage || "-"}</td>
-                      <td className="py-2 pr-4">{row.hoursEarned ?? 0}</td>
-                      <td className="py-2 pr-4">{row.creditsEarned ?? 0}</td>
+                      <td className="py-2 pr-4">{row.name || "-"}</td>
+                      <td className="py-2 pr-4">{row.email || "-"}</td>
+                      <td className="py-2 pr-4">{`${row.percent ?? 0}%`}</td>
+                      <td className="py-2 pr-4">{`${row.completedCourses ?? 0} / ${row.totalCourses ?? 0}`}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -445,8 +428,9 @@ export default function AdminPage() {
                     {searchResults.map((contact) => {
                       const contactId = Number(contact.contactId);
                       const isEnrolling = enrollingContactId === contactId;
+                      const contactEmail = String(contact.email || "").trim().toLowerCase();
                       const isEnrolled =
-                        contact.isEnrolled || enrolledContactIds.has(contactId);
+                        contact.isEnrolled || (contactEmail && enrolledEmails.has(contactEmail));
                       const canEnroll = Boolean(contact.email && !isEnrolled);
                       return (
                         <tr
