@@ -1,6 +1,11 @@
 import crypto from "node:crypto";
 import { NextResponse } from "next/server";
 import { enrollGrowthzoneContactInCertification } from "../../../lib/growthzone-ce-enrollment";
+import {
+  addThinkificUserToGroups,
+  getPpcuGroupName,
+  resolveThinkificNumericUserId,
+} from "../../../lib/thinkific-group-users";
 
 const THINKIFIC_GRAPHQL_URL =
   process.env.THINKIFIC_GRAPHQL_URL || "https://api.thinkific.com/stable/graphql";
@@ -324,6 +329,66 @@ export async function POST(request) {
       createdUserId = created.json?.id || null;
     }
 
+    const ppcuGroupName = getPpcuGroupName();
+    const thinkificUserId = await resolveThinkificNumericUserId({
+      graphqlId: existingUserId,
+      restCreatedId: createdUserId,
+      email,
+      restApiKey,
+      subdomain,
+    });
+
+    if (!thinkificUserId) {
+      logEnrollEvent("request.failed.group-add", {
+        email: maskEmail(email),
+        error: "Unable to resolve Thinkific user id for group assignment.",
+      });
+      return NextResponse.json(
+        {
+          message: "error",
+          error: "Unable to resolve Thinkific user id for group assignment.",
+        },
+        { status: 500 },
+      );
+    }
+
+    logEnrollEvent("request.group-add.started", {
+      email: maskEmail(email),
+      userId: thinkificUserId,
+      groupName: ppcuGroupName,
+    });
+
+    const groupResult = await addThinkificUserToGroups({
+      userId: thinkificUserId,
+      groupNames: [ppcuGroupName],
+      restApiKey,
+      subdomain,
+    });
+
+    if (!groupResult.ok) {
+      logEnrollEvent("request.failed.group-add", {
+        email: maskEmail(email),
+        userId: thinkificUserId,
+        groupName: ppcuGroupName,
+        status: groupResult.status,
+        error: groupResult.error || "Thinkific group assignment failed.",
+      });
+      return NextResponse.json(
+        {
+          message: "error",
+          error: groupResult.error || "Thinkific group assignment failed.",
+        },
+        { status: groupResult.status || 502 },
+      );
+    }
+
+    logEnrollEvent("request.group-add.succeeded", {
+      email: maskEmail(email),
+      userId: thinkificUserId,
+      groupName: ppcuGroupName,
+      alreadyMember: Boolean(groupResult.alreadyMember),
+    });
+
     const nowSeconds = Math.floor(Date.now() / 1000);
     const payload = {
       email,
@@ -354,7 +419,9 @@ export async function POST(request) {
     logEnrollEvent("request.succeeded", {
       email: maskEmail(email),
       userCreated: Boolean(createdUserId),
-      userId: existingUserId || createdUserId || null,
+      userId: thinkificUserId,
+      groupAdded: true,
+      groupAlreadyMember: Boolean(groupResult.alreadyMember),
       returnToDomain: (() => {
         try {
           return new URL(returnTo).hostname;
@@ -368,7 +435,9 @@ export async function POST(request) {
       message: "success",
       url,
       userCreated: Boolean(createdUserId),
-      userId: existingUserId || createdUserId || null,
+      userId: thinkificUserId,
+      groupAdded: true,
+      groupAlreadyMember: Boolean(groupResult.alreadyMember),
     });
   } catch (error) {
     logEnrollEvent("request.failed.exception", {
