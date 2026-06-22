@@ -52,52 +52,6 @@ function clean(value) {
   return String(value || "").trim();
 }
 
-function withRoleParam(rawUrl, role = "ppcu") {
-  const value = clean(rawUrl);
-  if (!value) return "";
-
-  try {
-    const isAbsolute = /^https?:\/\//i.test(value);
-    const parsed = new URL(value, "https://packagingschool.com");
-    if (!parsed.searchParams.get("role")) {
-      parsed.searchParams.set("role", role);
-    }
-    return isAbsolute ? parsed.toString() : `${parsed.pathname}${parsed.search}${parsed.hash}`;
-  } catch {
-    const hasQuery = value.includes("?");
-    const hasHash = value.includes("#");
-    if (hasHash) {
-      const [base, hash] = value.split("#", 2);
-      return `${base}${hasQuery ? "&" : "?"}role=${encodeURIComponent(role)}#${hash}`;
-    }
-    return `${value}${hasQuery ? "&" : "?"}role=${encodeURIComponent(role)}`;
-  }
-}
-
-function ensureQueryParam(rawUrl, key, value) {
-  const urlValue = clean(rawUrl);
-  const k = clean(key);
-  const v = clean(value);
-  if (!urlValue || !k || !v) return urlValue;
-
-  try {
-    const parsed = new URL(urlValue);
-    if (!parsed.searchParams.get(k)) {
-      parsed.searchParams.set(k, v);
-    }
-    return parsed.toString();
-  } catch {
-    const hasQuery = urlValue.includes("?");
-    const hasHash = urlValue.includes("#");
-    const encoded = `${encodeURIComponent(k)}=${encodeURIComponent(v)}`;
-    if (hasHash) {
-      const [base, hash] = urlValue.split("#", 2);
-      return `${base}${hasQuery ? "&" : "?"}${encoded}#${hash}`;
-    }
-    return `${urlValue}${hasQuery ? "&" : "?"}${encoded}`;
-  }
-}
-
 function base64url(value) {
   return Buffer.from(value)
     .toString("base64")
@@ -196,19 +150,18 @@ export async function POST(request) {
     const firstName = clean(body?.first_name);
     const lastName = clean(body?.last_name);
     const returnTo = clean(body?.return_to);
-    const returnToWithRole = withRoleParam(returnTo, "ppcu");
     const contactId = Number(body?.contact_id);
     const contactName = clean(body?.contact_name);
     const shouldEnrollGrowthzone =
       body?.trigger_growthzone_enrollment === true ||
       String(body?.trigger_growthzone_enrollment || "").toLowerCase() === "true";
 
-    if (!email || !firstName || !lastName || !returnToWithRole) {
+    if (!email || !firstName || !lastName || !returnTo) {
       logEnrollEvent("request.failed.validation", {
         email: maskEmail(email),
         hasFirstName: Boolean(firstName),
         hasLastName: Boolean(lastName),
-        hasReturnTo: Boolean(returnToWithRole),
+        hasReturnTo: Boolean(returnTo),
       });
       return NextResponse.json(
         {
@@ -396,8 +349,7 @@ export async function POST(request) {
     }
 
     const separator = ssoBaseUrl.includes("?") ? "&" : "?";
-    let url = `${ssoBaseUrl}${separator}jwt=${encodeURIComponent(token)}&return_to=${encodeURIComponent(returnToWithRole)}`;
-    url = ensureQueryParam(url, "role", "ppcu");
+    const url = `${ssoBaseUrl}${separator}jwt=${encodeURIComponent(token)}&return_to=${encodeURIComponent(returnTo)}`;
 
     logEnrollEvent("request.succeeded", {
       email: maskEmail(email),
@@ -405,7 +357,7 @@ export async function POST(request) {
       userId: existingUserId || createdUserId || null,
       returnToDomain: (() => {
         try {
-          return new URL(returnToWithRole).hostname;
+          return new URL(returnTo).hostname;
         } catch {
           return "unknown";
         }

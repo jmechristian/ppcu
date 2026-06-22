@@ -59,10 +59,11 @@ export default function InteriorPageLayout({ children, activeItem = null }) {
   const fullName =
     [profile.firstName, profile.lastName].filter(Boolean).join(" ") || profile.name || "";
   const isLoadingProfile = profile.status === "loading";
-  const isStaffAdmin = /^staff\s*-\s*admin$/i.test((profile.type || "").trim());
+  const roleType = String(profile.type || "").trim();
+  const isAdminVisible = /primary/i.test(roleType) || /staff/i.test(roleType);
   const hasProfile = Boolean(fullName || profile.title || profile.business || profile.type);
 
-  const navItems = isStaffAdmin
+  const navItems = isAdminVisible
     ? [
         ...BASE_NAV_ITEMS,
         {

@@ -143,8 +143,9 @@ export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openIdx, setOpenIdx] = useState(null);
   const isLoggedIn = profile.status === "ready";
-  const isPrimaryContact = /primary/i.test(profile.type || "");
-  const mobileItems = isPrimaryContact
+  const roleType = String(profile.type || "").trim();
+  const isAdminVisible = /primary/i.test(roleType) || /staff/i.test(roleType);
+  const mobileItems = isAdminVisible
     ? [
         ...MOBILE_SIDEBAR_ITEMS,
         { key: "admin", label: "Admin", href: "/admin", icon: FaCog },

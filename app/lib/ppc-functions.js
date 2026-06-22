@@ -202,15 +202,23 @@ async function runGraphQL(query, variables = {}) {
   let lastError = null;
 
   for (const { endpoint, apiKey, source } of configs) {
-    const response = await fetch(endpoint, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-      },
-      body: JSON.stringify({ query, variables }),
-      cache: "no-store",
-    });
+    let response;
+    try {
+      response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+        },
+        body: JSON.stringify({ query, variables }),
+        cache: "no-store",
+      });
+    } catch (error) {
+      lastError = new Error(
+        `GraphQL network request failed using ${source} (${endpoint}): ${error?.message || "unknown error"}.`,
+      );
+      continue;
+    }
 
     if (!response.ok) {
       lastError = new Error(
