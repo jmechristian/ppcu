@@ -223,6 +223,64 @@ export async function fetchAllBundleLearners({ bundleId, restApiKey, subdomain }
     .sort((a, b) => b.percent - a.percent || String(a.name).localeCompare(String(b.name)));
 }
 
+/**
+ * Checks whether a Thinkific user has completed a specific course.
+ * Returns { ok, found, completed, percent }. `completed` is true when the
+ * enrollment is marked completed or percentage_completed >= 100.
+ */
+export async function isThinkificCourseCompleted({ userId, courseId, restApiKey, subdomain }) {
+  const numericUserId = toNumericCourseId(userId);
+  const numericCourseId = toNumericCourseId(courseId);
+
+  if (!numericUserId || !numericCourseId) {
+    return { ok: false, found: false, completed: false, percent: 0, error: "Missing user or course id." };
+  }
+  if (!restApiKey || !subdomain) {
+    return { ok: false, found: false, completed: false, percent: 0, error: "Missing Thinkific REST credentials." };
+  }
+
+  const url =
+    `${THINKIFIC_ENROLLMENTS_URL}?query[course_id]=${numericCourseId}` +
+    `&query[user_id]=${numericUserId}&limit=10`;
+
+  const response = await fetch(url, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Auth-API-Key": restApiKey,
+      "X-Auth-Subdomain": subdomain,
+    },
+    cache: "no-store",
+  });
+
+  const json = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    return {
+      ok: false,
+      found: false,
+      completed: false,
+      percent: 0,
+      status: response.status,
+      error: clean(json?.message) || `Enrollment lookup failed (${response.status}).`,
+    };
+  }
+
+  const items = Array.isArray(json?.items) ? json.items : [];
+  if (items.length === 0) {
+    return { ok: true, found: false, completed: false, percent: 0 };
+  }
+
+  const fraction = normalizeFraction(items[0]?.percentage_completed);
+  const completed = Boolean(items[0]?.completed) || fraction >= 1;
+
+  return {
+    ok: true,
+    found: true,
+    completed,
+    percent: Math.round(fraction * 100),
+  };
+}
+
 export async function enrollUserInBundle({ userId, bundleId, restApiKey, subdomain }) {
   const numericUserId = toNumericCourseId(userId);
   const id = clean(bundleId) || getPpcuBundleId();

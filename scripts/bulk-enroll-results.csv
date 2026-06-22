@@ -1,0 +1,2 @@
+email,firstName,lastName,status,httpStatus,userId,userCreated,bundleAlreadyEnrolled,groupAlreadyMember,error
+julie@packagingschool.com,Julie,Rice Suggs,success,200,3120752,false,false,true,

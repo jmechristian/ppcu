@@ -1,0 +1,2 @@
+email,firstName,lastName,status,httpStatus,userId,userCreated,bundleAlreadyEnrolled,groupAlreadyMember,error
+christopher3apress@gmail.com,Christopher,Montalvo,success,200,253434279,false,false,true,
