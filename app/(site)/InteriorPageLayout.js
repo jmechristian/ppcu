@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { FaBook, FaBookOpen, FaCog, FaHome, FaInfoCircle } from "react-icons/fa";
+import { FaBook, FaBookOpen, FaCog, FaFileAlt, FaHome, FaInfoCircle } from "react-icons/fa";
 import { useGrowthzoneProfile } from "../providers/GrowthzoneProfileContext";
+import { canViewDocs, isStaffRole } from "../lib/doc-access";
 
 const BASE_NAV_ITEMS = [
   {
@@ -59,21 +60,33 @@ export default function InteriorPageLayout({ children, activeItem = null }) {
   const fullName =
     [profile.firstName, profile.lastName].filter(Boolean).join(" ") || profile.name || "";
   const isLoadingProfile = profile.status === "loading";
-  const roleType = String(profile.type || "").trim();
-  const isAdminVisible = /primary/i.test(roleType) || /staff/i.test(roleType);
+  const isAdminVisible = isStaffRole(profile.type);
+  const isDocsVisible = canViewDocs(profile);
   const hasProfile = Boolean(fullName || profile.title || profile.business || profile.type);
 
-  const navItems = isAdminVisible
-    ? [
-        ...BASE_NAV_ITEMS,
-        {
-          key: "admin",
-          href: "/admin",
-          label: "Admin",
-          icon: <FaCog className="h-5 w-5" aria-hidden="true" />,
-        },
-      ]
-    : BASE_NAV_ITEMS;
+  const navItems = [
+    ...BASE_NAV_ITEMS,
+    ...(isAdminVisible
+      ? [
+          {
+            key: "admin",
+            href: "/admin",
+            label: "Admin",
+            icon: <FaCog className="h-5 w-5" aria-hidden="true" />,
+          },
+        ]
+      : []),
+    ...(isDocsVisible
+      ? [
+          {
+            key: "documentation",
+            href: "/documentation",
+            label: "Documentation",
+            icon: <FaFileAlt className="h-5 w-5" aria-hidden="true" />,
+          },
+        ]
+      : []),
+  ];
 
   return (
     <div className="w-full bg-white py-6 lg:py-7">
