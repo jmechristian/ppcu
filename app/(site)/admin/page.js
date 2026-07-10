@@ -30,6 +30,7 @@ const STAFF_PAGE_SIZE = 25;
 export default function AdminPage() {
   const { profile } = useGrowthzoneProfile();
   const [loading, setLoading] = useState(true);
+  const [loadingNote, setLoadingNote] = useState("");
   const [error, setError] = useState("");
   const [payload, setPayload] = useState(null);
   const [checkoutUrl, setCheckoutUrl] = useState("");
@@ -44,27 +45,63 @@ export default function AdminPage() {
 
   const loadAdminData = useCallback(async ({ showLoading = true } = {}) => {
     if (showLoading) setLoading(true);
+    setLoadingNote("");
+
+    const MAX_ATTEMPTS = 3;
+    let lastErr = "";
+
     try {
-      const [adminRes, outlineRes] = await Promise.all([
-        fetch("/api/growthzone/admin", { cache: "no-store", credentials: "include" }),
-        fetch("/api/thinkific/course-outline", { cache: "no-store" }),
-      ]);
+      // Kick off the (fast) outline fetch once; it isn't the bottleneck.
+      const outlinePromise = fetch("/api/thinkific/course-outline", {
+        cache: "no-store",
+      })
+        .then((res) => res.json())
+        .catch(() => ({}));
 
-      if (!adminRes.ok) throw new Error(`Request failed (${adminRes.status})`);
-      const json = await adminRes.json();
+      let adminJson = null;
 
-      if (!json?.connected) {
+      for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+        try {
+          const adminRes = await fetch("/api/growthzone/admin", {
+            cache: "no-store",
+            credentials: "include",
+          });
+          const json = await adminRes.json().catch(() => ({}));
+
+          if (adminRes.ok) {
+            adminJson = json;
+            break;
+          }
+          lastErr = json?.error || json?.message || `Request failed (${adminRes.status})`;
+        } catch (err) {
+          lastErr = err?.message || "Network error";
+        }
+
+        if (attempt < MAX_ATTEMPTS) {
+          setLoadingNote(
+            "This is taking a little longer than usual - still working on it...",
+          );
+          await new Promise((resolve) => setTimeout(resolve, 1500 * attempt));
+        }
+      }
+
+      if (!adminJson) {
+        throw new Error(lastErr || "Failed to load admin data.");
+      }
+
+      if (!adminJson?.connected) {
         setError("Please sign in to view the admin dashboard.");
       } else {
         setError("");
-        setPayload(json);
+        setPayload(adminJson);
       }
 
-      const outlineJson = await outlineRes.json().catch(() => ({}));
+      const outlineJson = await outlinePromise;
       setCheckoutUrl(outlineJson?.data?.product?.checkoutUrl || "");
     } catch (err) {
       setError(err?.message || "Failed to load admin data.");
     } finally {
+      setLoadingNote("");
       setLoading(false);
     }
   }, []);
@@ -188,7 +225,12 @@ export default function AdminPage() {
       <section className="overflow-hidden rounded-xl">
         <div className="bg-black text-white px-6 py-5">
           {loading ? (
-            <div className="text-white/80">Loading profile...</div>
+            <div className="space-y-1">
+              <div className="text-white/80">Loading profile...</div>
+              {loadingNote && (
+                <div className="text-xs text-white/60">{loadingNote}</div>
+              )}
+            </div>
           ) : error ? (
             <div className="text-red-300">{error}</div>
           ) : (

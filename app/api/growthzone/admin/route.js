@@ -22,6 +22,9 @@ import {
   getPpcuBundleId,
 } from "@/app/lib/thinkific-enrollments";
 
+export const dynamic = "force-dynamic";
+export const maxDuration = 60;
+
 function getThinkificRestCreds() {
   const restApiKey = String(
     process.env.THINKIFIC_REST_API_KEY ||
@@ -73,7 +76,7 @@ function buildTrackingByContactId(rows) {
   return map;
 }
 
-export async function GET(request) {
+async function handleGet(request) {
   const baseUrl = trimSlash(process.env.GROWTHZONE_BASE_URL);
   const apiKey = process.env.GROWTHZONE_API_KEY;
   if (!baseUrl || !apiKey) {
@@ -268,4 +271,22 @@ export async function GET(request) {
     activeLearners,
     relatedContacts: relatedContactsOut,
   });
+}
+
+export async function GET(request) {
+  try {
+    return await handleGet(request);
+  } catch (error) {
+    console.error("[growthzone-admin] failed", {
+      message: error?.message,
+      stack: error?.stack,
+    });
+    return NextResponse.json(
+      {
+        connected: false,
+        error: error?.message || "Admin data failed to load.",
+      },
+      { status: 500 },
+    );
+  }
 }
