@@ -61,6 +61,11 @@ function normalizeCourseId(value) {
   return clean(value);
 }
 
+function extractLeadingOrder(value) {
+  const match = clean(value).match(/^(\d+)\./);
+  return match ? Number(match[1]) : null;
+}
+
 function extractLegacyNumericId(value) {
   const raw = clean(value);
   if (!raw) return null;
@@ -250,10 +255,13 @@ export async function GET(request) {
         progressByCourseId.get(courseId) ??
         (legacyCourseId ? progressByCourseId.get(legacyCourseId) : null) ??
         null;
+      const title = course?.title || course?.name || `Course ${idx + 1}`;
       return {
         id: courseId,
         legacyId: legacyCourseId,
-        title: course?.title || course?.name || `Course ${idx + 1}`,
+        title,
+        sortOrder: extractLeadingOrder(title),
+        originalIndex: idx,
         instructor: course?.instructor?.fullName || "",
         cardImageUrl: course?.cardImage?.url || "",
         priceDisplay: course?.product?.primaryPrice?.displayPrice || "",
@@ -261,6 +269,20 @@ export async function GET(request) {
         progressPercent,
       };
     });
+
+    // Thinkific's GraphQL API returns courses in enrollment order, not the numeric
+    // "1. ...", "2. ..." order shown in their titles - sort by that prefix so the
+    // dashboard matches the intended curriculum sequence.
+    courses.sort((a, b) => {
+      if (a.sortOrder != null && b.sortOrder != null) return a.sortOrder - b.sortOrder;
+      if (a.sortOrder != null) return -1;
+      if (b.sortOrder != null) return 1;
+      return a.originalIndex - b.originalIndex;
+    });
+    for (const course of courses) {
+      delete course.sortOrder;
+      delete course.originalIndex;
+    }
 
     const data = {
       user: {

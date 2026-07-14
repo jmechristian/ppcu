@@ -6,7 +6,7 @@ import {
 } from "../../../../lib/growthzone-ce-enrollment";
 import { markCertificationComponentCompleteByName } from "../../../../lib/growthzone-component-completion";
 import { isThinkificCourseCompleted } from "../../../../lib/thinkific-enrollments";
-import { getModuleForLesson } from "../../../../lib/ppcu-lesson-component-map";
+import { getModuleForLesson, getModuleForCourseName } from "../../../../lib/ppcu-lesson-component-map";
 
 const DEFAULT_CERTIFICATION_NAME = "Folding Carton Essentials";
 
@@ -93,6 +93,7 @@ export async function POST(request) {
     const thinkificUserId = payload?.user?.id ?? null;
     const lessonId = payload?.lesson?.id ?? null;
     const courseId = payload?.course?.id ?? null;
+    const courseName = clean(payload?.course?.name);
     const eventId = clean(body?.id) || null;
 
     logEvent("request.received", {
@@ -108,9 +109,12 @@ export async function POST(request) {
       return NextResponse.json({ ok: true, ignored: true, reason: "non-lesson resource" });
     }
 
-    const moduleName = getModuleForLesson(lessonId);
+    // Every course has a trailing filler lesson (e.g. "Continue Your Learning Journey")
+    // that isn't in the objective map but is often what actually completes the course.
+    // Fall back to matching the module by course name so that completion event isn't skipped.
+    const moduleName = getModuleForLesson(lessonId) || getModuleForCourseName(courseName);
     if (!moduleName) {
-      logEvent("request.ignored.unmapped-lesson", { eventId, lessonId });
+      logEvent("request.ignored.unmapped-lesson", { eventId, lessonId, courseName });
       return NextResponse.json({ ok: true, ignored: true, reason: "lesson not part of certification" });
     }
 

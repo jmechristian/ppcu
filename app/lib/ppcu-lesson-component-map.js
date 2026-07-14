@@ -101,6 +101,12 @@ export const LESSON_TO_MODULE = LESSON_OBJECTIVES.reduce((acc, row) => {
   return acc;
 }, {});
 
+const MODULE_NAMES = Object.keys(MODULE_COMPONENT_IDS);
+const MODULE_NAMES_BY_LOWER = MODULE_NAMES.reduce((acc, name) => {
+  acc[name.toLowerCase()] = name;
+  return acc;
+}, {});
+
 /**
  * Returns the GrowthZone module/component name for a Thinkific lesson id, or null
  * when the lesson is not part of the certification.
@@ -108,4 +114,21 @@ export const LESSON_TO_MODULE = LESSON_OBJECTIVES.reduce((acc, row) => {
 export function getModuleForLesson(lessonId) {
   if (lessonId === null || lessonId === undefined) return null;
   return LESSON_TO_MODULE[String(lessonId)] || null;
+}
+
+/**
+ * Every Thinkific course has a trailing "Next Step" filler lesson (e.g. "Continue Your
+ * Learning Journey") that isn't one of the tracked objective lessons above. Since course
+ * completion is measured by the enrollment's overall percentage (not by which lesson
+ * fired the event), that filler lesson is often the one that actually pushes a course to
+ * 100% - so it must still resolve to a module, or the completion check gets skipped
+ * entirely. Course names follow the "<n>. Module Name" convention (e.g.
+ * "2. Virgin Paperboard"), which matches a module name once the leading number is
+ * stripped.
+ */
+export function getModuleForCourseName(courseName) {
+  const raw = String(courseName || "").trim();
+  if (!raw) return null;
+  const stripped = raw.replace(/^\d+\.\s*/, "").trim().toLowerCase();
+  return MODULE_NAMES_BY_LOWER[stripped] || null;
 }
