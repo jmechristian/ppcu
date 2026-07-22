@@ -15,7 +15,26 @@ const EMPTY_PROFILE = {
   business: "",
   title: "",
   type: "",
+  hasMembershipAccess: false,
+  isEnrolled: false,
+  // True only once a live server response has confirmed this profile (never trust the
+  // sessionStorage cache alone for access-sensitive checks like membership gating).
+  verified: false,
 };
+
+async function fetchIsEnrolled(email) {
+  if (!email) return false;
+  try {
+    const response = await fetch(
+      `/api/thinkific/enrollment-status?email=${encodeURIComponent(email)}`,
+      { cache: "no-store" },
+    );
+    const json = await response.json().catch(() => ({}));
+    return Boolean(json?.enrolled);
+  } catch {
+    return false;
+  }
+}
 
 const GrowthzoneProfileContext = createContext({
   profile: EMPTY_PROFILE,
@@ -35,6 +54,7 @@ function normalizeProfile(json) {
     business: json?.profile?.business || "",
     title: json?.profile?.title || "",
     type: json?.profile?.type || "",
+    hasMembershipAccess: Boolean(json?.profile?.hasMembershipAccess),
   };
 }
 
@@ -49,13 +69,16 @@ export function GrowthzoneProfileProvider({ children }) {
         credentials: "include",
       });
       if (!response.ok) {
-        setProfile(EMPTY_PROFILE);
+        setProfile({ ...EMPTY_PROFILE, verified: true });
         if (typeof window !== "undefined") window.sessionStorage.removeItem(STORAGE_KEY);
         return;
       }
 
       const json = await response.json();
-      const nextProfile = normalizeProfile(json);
+      const parsedProfile = normalizeProfile(json);
+      const isEnrolled =
+        parsedProfile.status === "ready" ? await fetchIsEnrolled(parsedProfile.email) : false;
+      const nextProfile = { ...parsedProfile, isEnrolled, verified: true };
       setProfile(nextProfile);
 
       if (typeof window !== "undefined") {
@@ -66,7 +89,7 @@ export function GrowthzoneProfileProvider({ children }) {
         }
       }
     } catch {
-      setProfile((prev) => (prev.status === "ready" ? prev : EMPTY_PROFILE));
+      setProfile((prev) => (prev.status === "ready" ? { ...prev, verified: true } : { ...EMPTY_PROFILE, verified: true }));
     }
   };
 
@@ -80,6 +103,9 @@ export function GrowthzoneProfileProvider({ children }) {
             ...EMPTY_PROFILE,
             ...parsed,
             status: "ready",
+            // Cached data is optimistic only - always re-verify with the server
+            // before trusting it for access-sensitive checks.
+            verified: false,
           });
         }
       }

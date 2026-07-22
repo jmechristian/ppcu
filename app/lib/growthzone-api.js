@@ -240,6 +240,42 @@ export async function fetchContactCertifications(
   return readResults(result.json).map(normalizeCertRow);
 }
 
+export function normalizeMembershipRow(item) {
+  return {
+    membershipId: item?.MembershipId ?? null,
+    name: item?.Name ?? "",
+    statusText: item?.StatusText ?? "",
+    membershipStatusTypeId: item?.MembershipStatusTypeId ?? null,
+    isInactive: Boolean(item?.IsInactive),
+    expirationDate: item?.ExpirationDate ?? null,
+  };
+}
+
+export async function fetchContactMemberships(baseUrl, apiKey, contactId, timeoutMs = DEFAULT_TIMEOUT_MS) {
+  const id = toPositiveInt(contactId);
+  if (!id) return [];
+
+  const result = await fetchJson(
+    `${trimSlash(baseUrl)}/api/ContactOverview/${id}/Memberships/`,
+    { method: "GET", headers: getApiHeaders(apiKey) },
+    timeoutMs,
+  );
+
+  if (!result.response.ok) return [];
+  return readResults(result.json).map(normalizeMembershipRow);
+}
+
+// For now, access just requires any active membership (not restricted by type/name).
+// This may get narrowed to specific membership types later.
+export function isQualifyingMembershipRow(row) {
+  if (!row || row.isInactive) return false;
+  return !row.statusText || /active/i.test(row.statusText);
+}
+
+export function hasQualifyingMembership(rows) {
+  return (Array.isArray(rows) ? rows : []).some(isQualifyingMembershipRow);
+}
+
 export async function fetchAllCertificationTracking(baseUrl, apiKey, timeoutMs = DEFAULT_TIMEOUT_MS) {
   const pageSize = 100;
   const rows = [];

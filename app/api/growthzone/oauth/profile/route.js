@@ -2,8 +2,10 @@ import { NextResponse } from "next/server";
 import {
   extractOrgDetails,
   extractOrganizationContactId,
+  fetchContactMemberships,
   fetchJson,
   getApiHeaders,
+  hasQualifyingMembership,
   parseCookies,
   readResults,
   toPositiveInt,
@@ -139,6 +141,20 @@ export async function GET(request) {
     }
   }
 
+  const resolvedContactId = oauthContactId || matchedContact?.ContactId || null;
+  let membershipAccess = false;
+  if (resolvedContactId) {
+    try {
+      const memberships = await fetchContactMemberships(
+        baseUrl,
+        apiKey,
+        resolvedContactId,
+        DEFAULT_TIMEOUT_MS,
+      );
+      membershipAccess = hasQualifyingMembership(memberships);
+    } catch {}
+  }
+
   return NextResponse.json({
     connected: true,
     profile: {
@@ -146,11 +162,12 @@ export async function GET(request) {
       lastName,
       name: fullName,
       email,
-      contactId: oauthContactId || matchedContact?.ContactId || null,
+      contactId: resolvedContactId,
       organizationContactId,
       business,
       title,
       type,
+      hasMembershipAccess: membershipAccess,
     },
   });
 }
