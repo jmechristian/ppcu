@@ -95,7 +95,7 @@ export default function PpcPageClient() {
         </div>
         <div className='px-5 py-2.5'>
           <Link
-            href='/contact'
+            href='https://paperbox.org/contact/'
             className='inline-flex items-center rounded-none bg-brand-green px-5 py-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-white hover:brightness-110'
           >
             Contact Us
