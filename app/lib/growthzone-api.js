@@ -26,6 +26,64 @@ export function toPositiveInt(value) {
   return Number.isFinite(n) && n > 0 ? Math.trunc(n) : null;
 }
 
+export function buildOauthCookie(name, value, maxAgeSeconds) {
+  return `${name}=${encodeURIComponent(value)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAgeSeconds}`;
+}
+
+export function expireOauthCookie(name) {
+  return `${name}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`;
+}
+
+// Exchanges a stored GrowthZone refresh token for a fresh access token. The access
+// token cookie is intentionally short-lived (Max-Age = expires_in from GrowthZone),
+// so this must run any time the access token is missing/rejected but a refresh token
+// is still available, or every user gets silently logged out once it expires.
+export async function refreshGrowthzoneAccessToken({
+  baseUrl,
+  clientId,
+  clientSecret,
+  refreshToken,
+}) {
+  if (!baseUrl || !clientId || !clientSecret || !refreshToken) {
+    return { ok: false };
+  }
+
+  const basic = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
+  const body = new URLSearchParams({
+    grant_type: "refresh_token",
+    refresh_token: refreshToken,
+  });
+
+  try {
+    const response = await fetch(`${trimSlash(baseUrl)}/oauth/token`, {
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${basic}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: body.toString(),
+    });
+    const text = await response.text();
+    let json = null;
+    try {
+      json = text ? JSON.parse(text) : null;
+    } catch {}
+
+    if (!response.ok || !json?.access_token) {
+      return { ok: false, status: response.status };
+    }
+
+    return {
+      ok: true,
+      accessToken: json.access_token,
+      refreshToken: json.refresh_token || refreshToken,
+      expiresIn: Number(json.expires_in) || 3600,
+    };
+  } catch {
+    return { ok: false };
+  }
+}
+
 export function getApiHeaders(apiKey) {
   return {
     "Content-Type": "application/json",
