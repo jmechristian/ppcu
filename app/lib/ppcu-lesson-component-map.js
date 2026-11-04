@@ -107,6 +107,11 @@ const MODULE_NAMES_BY_LOWER = MODULE_NAMES.reduce((acc, name) => {
   return acc;
 }, {});
 
+// Thinkific title wording that differs from the GrowthZone component name.
+const COURSE_TITLE_ALIASES = {
+  "inks & coatings": "inks and coatings",
+};
+
 /**
  * Returns the GrowthZone module/component name for a Thinkific lesson id, or null
  * when the lesson is not part of the certification.
@@ -122,13 +127,20 @@ export function getModuleForLesson(lessonId) {
  * completion is measured by the enrollment's overall percentage (not by which lesson
  * fired the event), that filler lesson is often the one that actually pushes a course to
  * 100% - so it must still resolve to a module, or the completion check gets skipped
- * entirely. Course names follow the "<n>. Module Name" convention (e.g.
- * "2. Virgin Paperboard"), which matches a module name once the leading number is
- * stripped.
+ * entirely.
+ *
+ * Titles arrive as "PPC-01 Folding Carton Beginner Essentials" (current) or
+ * "2. Virgin Paperboard" (older). Strip that prefix, then match the GrowthZone
+ * component name. "Inks & Coatings" is aliased to "Inks and Coatings".
  */
 export function getModuleForCourseName(courseName) {
   const raw = String(courseName || "").trim();
   if (!raw) return null;
-  const stripped = raw.replace(/^\d+\.\s*/, "").trim().toLowerCase();
-  return MODULE_NAMES_BY_LOWER[stripped] || null;
+  const stripped = raw
+    .replace(/^ppc-\d+\s+/i, "")
+    .replace(/^\d+\.\s*/, "")
+    .trim()
+    .toLowerCase();
+  const aliased = COURSE_TITLE_ALIASES[stripped] || stripped;
+  return MODULE_NAMES_BY_LOWER[aliased] || null;
 }

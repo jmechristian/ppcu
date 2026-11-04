@@ -394,7 +394,10 @@ type BoosterCourseProgress @model @auth(rules: [{ allow: public }]) {
       queryField: "boosterProgressByUserEmail"
     )
   thinkificCourseId: String!
-    @index(name: "boosterProgressByCourse", queryField: "boosterProgressByCourse")
+    @index(
+      name: "boosterProgressByCourse"
+      queryField: "boosterProgressByCourse"
+    )
   courseTitle: String
   completedLessonIds: [String]
   completedLessonTitles: [String]
@@ -407,9 +410,13 @@ type BoosterCourseProgress @model @auth(rules: [{ allow: public }]) {
 
 type BoosterDiscountCode @model @auth(rules: [{ allow: public }]) {
   id: ID!
-  userId: ID! @index(name: "boosterCodesByUser", queryField: "boosterCodesByUser")
+  userId: ID!
+    @index(name: "boosterCodesByUser", queryField: "boosterCodesByUser")
   userEmail: String
-    @index(name: "boosterCodesByUserEmail", queryField: "boosterCodesByUserEmail")
+    @index(
+      name: "boosterCodesByUserEmail"
+      queryField: "boosterCodesByUserEmail"
+    )
   thinkificCourseId: String!
     @index(name: "boosterCodesByCourse", queryField: "boosterCodesByCourse")
   milestonePercent: Int!
@@ -520,6 +527,7 @@ type IcpfCmpmForm
   contactConsent: Boolean
   status: String @default(value: "DRAFT")
   videoLink: String
+  manualVideoLink: String
 }
 
 type PgsfForm
@@ -714,6 +722,9 @@ type LMSCourse @model @auth(rules: [{ allow: public }]) {
   partner: [Partner] @manyToMany(relationName: "PartnerCourses")
   libraries: [CustomerLibary] @manyToMany(relationName: "LibraryCourses")
   glossaryTerms: [GlossaryTerm] @manyToMany(relationName: "CourseGlossaryTerms")
+  thirtyDay: String
+  ninetyDay: String
+  threeSixtyDay: String
 }
 
 type LMSLesson @model @auth(rules: [{ allow: public }]) {
@@ -864,6 +875,19 @@ type CustomerLibary @model @auth(rules: [{ allow: public }]) {
   availableCodes: Int
   usedCodes: Int
   promotionId: Int
+  thinkificGroupId: String
+  thinkificGroupName: String
+  reportLayouts: [ReportLayout]
+    @hasMany(indexName: "layoutsByLibrary", fields: ["id"])
+}
+
+type ReportLayout @model @auth(rules: [{ allow: public }]) {
+  id: ID!
+  libraryId: ID! @index(name: "layoutsByLibrary", queryField: "layoutsByLibrary")
+  library: CustomerLibary @belongsTo(fields: ["libraryId"])
+  name: String!
+  title: String
+  modules: AWSJSON!
 }
 
 ######### Salesbar #########
@@ -983,7 +1007,8 @@ type AbTestExposure @model @auth(rules: [{ allow: public }]) {
   experimentKey: String!
     @index(name: "abExposureByExperiment", sortKeyFields: ["createdAt"])
   variant: String!
-  sessionId: String @index(name: "abExposureBySession", sortKeyFields: ["createdAt"])
+  sessionId: String
+    @index(name: "abExposureBySession", sortKeyFields: ["createdAt"])
   userID: ID @index(name: "abExposureByUser", sortKeyFields: ["createdAt"])
   pagePath: String
   deviceType: String
@@ -996,6 +1021,8 @@ type AbTestExposure @model @auth(rules: [{ allow: public }]) {
   source: String
   referrer: String
   ipAddress: String
+  city: String
+  region: String
   country: String
   createdAt: AWSDateTime
 }
@@ -1004,10 +1031,16 @@ type AbTestEvent @model @auth(rules: [{ allow: public }]) {
   id: ID!
   experimentKey: String!
     @index(name: "abEventByExperiment", sortKeyFields: ["createdAt"])
+  experimentDay: String
+    @index(name: "abEventByExperimentDay", sortKeyFields: ["createdAt"])
   eventName: String! @index(name: "abEventByName", sortKeyFields: ["createdAt"])
   variant: String
-  sessionId: String @index(name: "abEventBySession", sortKeyFields: ["createdAt"])
+  sessionId: String
+    @index(name: "abEventBySession", sortKeyFields: ["createdAt"])
+  visitorId: String
+    @index(name: "abEventByVisitor", sortKeyFields: ["createdAt"])
   userID: ID @index(name: "abEventByUser", sortKeyFields: ["createdAt"])
+  email: String @index(name: "abEventByEmail", sortKeyFields: ["createdAt"])
   pagePath: String
   deviceType: String
   acquisitionChannel: String
@@ -1031,11 +1064,39 @@ type AbTestEvent @model @auth(rules: [{ allow: public }]) {
   grossAmountCents: Int
   netAmountCents: Int
   discountAmountCents: Int
+  matchedIntentId: String
+  attributionMethod: String
   source: String
   reason: String
   ipAddress: String
+  city: String
+  region: String
   country: String
   metadata: AWSJSON
+  createdAt: AWSDateTime
+}
+
+type AbWebhookReceipt @model @auth(rules: [{ allow: public }]) {
+  id: ID!
+  source: String!
+    @index(name: "abWebhookReceiptBySource", sortKeyFields: ["createdAt"])
+  receiptDay: String
+    @index(name: "abWebhookReceiptByDay", sortKeyFields: ["createdAt"])
+  experimentKey: String
+  decision: String
+  reason: String
+  action: String
+  status: String
+  thinkificOrderId: String
+  externalOrderId: String
+  orderNumber: String
+  email: String
+  variant: String
+  matchedSessionId: String
+  matchedIntentId: String
+  attributionMethod: String
+  abEventId: String
+  rawPayload: AWSJSON
   createdAt: AWSDateTime
 }
 
@@ -1246,6 +1307,169 @@ type EmailSubscription @model @auth(rules: [{ allow: public }]) {
   page: String
 }
 
+type EmailTemplate @model @auth(rules: [{ allow: public }]) {
+  id: ID!
+  slug: String!
+    @index(name: "emailTemplateBySlug", queryField: "emailTemplateBySlug")
+  name: String!
+  subject: String
+  preheader: String
+  description: String
+  status: String
+  documentJson: AWSJSON!
+  updatedBy: String
+}
+
+# Owned marketing contacts. Status is subscribed | unsubscribed | bounced | archived.
+type EmailContact @model @auth(rules: [{ allow: public }]) {
+  id: ID!
+  email: String!
+    @index(name: "emailContactByEmail", queryField: "emailContactByEmail")
+  firstName: String
+  lastName: String
+  searchText: String
+  status: String
+  source: String
+  thinkificUserId: String
+  thinkificMatched: Boolean
+  enrollmentCount: Int
+  hasPurchase: Boolean
+  acContactId: String
+  unsubscribedAt: AWSDateTime
+  archivedAt: AWSDateTime
+}
+
+type EmailList @model @auth(rules: [{ allow: public }]) {
+  id: ID!
+  name: String!
+  description: String
+  status: String
+  memberCount: Int
+  archivedAt: AWSDateTime
+}
+
+type EmailListMembership @model @auth(rules: [{ allow: public }]) {
+  id: ID!
+  listId: ID! @index(name: "membershipByList", queryField: "membershipByList")
+  contactId: ID!
+    @index(name: "membershipByContact", queryField: "membershipByContact")
+  email: String!
+  status: String
+}
+
+type EmailCampaign @model @auth(rules: [{ allow: public }]) {
+  id: ID!
+  name: String!
+  subject: String
+  preheader: String
+  fromName: String
+  fromEmail: String
+  templateId: ID
+  listId: ID
+  status: String
+  scheduledAt: AWSDateTime
+  htmlSnapshot: String
+  recipientCount: Int
+  sentCount: Int
+  failedCount: Int
+  openCount: Int
+  clickCount: Int
+  unsubCount: Int
+  sentAt: AWSDateTime
+  error: String
+}
+
+type EmailSend @model @auth(rules: [{ allow: public }]) {
+  id: ID!
+  campaignId: ID
+    @index(name: "emailSendByCampaign", queryField: "emailSendByCampaign")
+  automationRunId: ID
+    @index(name: "emailSendByRun", queryField: "emailSendByRun")
+  contactId: ID
+  email: String!
+  status: String
+  sesMessageId: String
+  openedAt: AWSDateTime
+  openCount: Int
+  clickedAt: AWSDateTime
+  clickCount: Int
+  lastClickedUrl: String
+  skipReason: String
+  error: String
+}
+
+# Weekly automation. status is on | off. sendDay is Mon–Sun. sendTime is HH:mm Eastern.
+type EmailAutomation @model @auth(rules: [{ allow: public }]) {
+  id: ID!
+  key: String!
+    @index(name: "emailAutomationByKey", queryField: "emailAutomationByKey")
+  name: String!
+  status: String
+  sendDay: String
+  sendTime: String
+  subject: String
+  preheader: String
+  fromName: String
+  fromEmail: String
+  templateId: ID
+  audience: String
+  lastRunOn: String
+}
+
+# One execution of an automation. status is RUNNING | SENT | FAILED.
+type EmailAutomationRun @model @auth(rules: [{ allow: public }]) {
+  id: ID!
+  automationId: ID!
+    @index(name: "emailAutomationRunByAutomation", queryField: "emailAutomationRunByAutomation")
+  runOn: String
+  status: String
+  subject: String
+  recipientCount: Int
+  sentCount: Int
+  failedCount: Int
+  skippedCount: Int
+  openCount: Int
+  clickCount: Int
+  unsubCount: Int
+  startedAt: AWSDateTime
+  finishedAt: AWSDateTime
+  error: String
+}
+
+type InternalDigestRecipient @model @auth(rules: [{ allow: public }]) {
+  id: ID!
+  email: String!
+    @index(
+      name: "internalDigestRecipientByEmail"
+      queryField: "internalDigestRecipientByEmail"
+    )
+  name: String
+  active: Boolean
+}
+
+# kind is a constant partition ("weekly") so history can be queried newest-first.
+type InternalDigestSend @model @auth(rules: [{ allow: public }]) {
+  id: ID!
+  kind: String!
+    @index(
+      name: "internalDigestSendByKindAndSentAt"
+      queryField: "internalDigestSendsByKindAndSentAt"
+      sortKeyFields: ["sentAt"]
+    )
+  sentAt: AWSDateTime!
+  subject: String!
+  html: String!
+  text: String
+  periodStart: AWSDate
+  periodEnd: AWSDate
+  recipientCount: Int
+  recipients: [String]
+  status: String
+  trigger: String
+  error: String
+  statsJson: AWSJSON
+}
+
 ######### IMAGES #########
 
 type ImageObject @model @auth(rules: [{ allow: public }]) {
@@ -1359,7 +1583,8 @@ type Order @model @auth(rules: [{ allow: public }]) {
 
 type ThinkificEnrollmentWebhookEvent @model @auth(rules: [{ allow: public }]) {
   id: ID!
-  eventId: String! @index(name: "webhookByEventId", queryField: "webhookByEventId")
+  eventId: String!
+    @index(name: "webhookByEventId", queryField: "webhookByEventId")
   resource: String!
   action: String!
   tenantId: String
@@ -1452,6 +1677,99 @@ type CourseOutlineRequest @model @auth(rules: [{ allow: public }]) {
   country: String
   device: String
   page: String
+}
+
+######### Southeastern Packaging Summit #########
+
+type SpsInterest @model @auth(rules: [{ allow: public }]) {
+  id: ID!
+  name: String!
+  email: String!
+    @index(name: "spsInterestByEmail", queryField: "spsInterestsByEmail")
+  company: String
+  interest: String
+}
+
+######### EDUCATION PARTNER LEADS #########
+
+type EducationPartnerLead @model @auth(rules: [{ allow: public }]) {
+  id: ID!
+  email: String!
+    @index(
+      name: "educationPartnerLeadByEmail"
+      queryField: "educationPartnerLeadsByEmail"
+    )
+  page: String
+  pageTitle: String
+}
+
+######### LIBRARY ENROLLMENT APPROVAL #########
+
+type LibraryEnrollmentRequest @model @auth(rules: [{ allow: public }]) {
+  id: ID!
+  librarySlug: String!
+    @index(name: "requestsByLibrary", queryField: "enrollmentRequestsByLibrary")
+  status: String! @default(value: "PENDING")
+  requesterUserID: ID!
+    @index(
+      name: "requestsByRequesterUser"
+      queryField: "enrollmentRequestsByRequesterUser"
+    )
+  requesterEmail: String!
+    @index(
+      name: "requestsByRequesterEmail"
+      queryField: "enrollmentRequestsByRequesterEmail"
+    )
+  requesterName: String
+  salesLeaderUserID: ID!
+    @index(
+      name: "requestsBySalesLeaderUser"
+      queryField: "enrollmentRequestsBySalesLeaderUser"
+    )
+  salesLeaderEmail: String!
+    @index(
+      name: "requestsBySalesLeader"
+      queryField: "enrollmentRequestsBySalesLeader"
+    )
+  salesLeaderName: String
+  courseId: String
+  courseName: String
+  courseImage: String
+  courseLink: String
+  thinkificId: String
+  couponCode: String
+  decisionToken: String
+    @index(
+      name: "requestsByDecisionToken"
+      queryField: "enrollmentRequestsByDecisionToken"
+    )
+  decidedAt: AWSDateTime
+  decidedByEmail: String
+  declineReason: String
+  thinkificEnrollmentId: String
+  page: String
+}
+
+type NetworkDistributionSalesLeader @model @auth(rules: [{ allow: public }]) {
+  id: ID!
+  email: String!
+    @index(name: "ndSalesLeaderByEmail", queryField: "ndSalesLeadersByEmail")
+  name: String
+  active: Boolean @default(value: "true")
+}
+
+type NetworkDistributionLearner @model @auth(rules: [{ allow: public }]) {
+  id: ID!
+  email: String!
+    @index(name: "ndLearnerByEmail", queryField: "ndLearnersByEmail")
+  salesLeaderEmail: String!
+    @index(
+      name: "ndLearnersBySalesLeader"
+      queryField: "ndLearnersBySalesLeader"
+    )
+  name: String
+  firstApprovedAt: AWSDateTime
+  status: String
 }
 
 ######### GLOSSARY QUIZ GAME #########

@@ -1032,6 +1032,7 @@ export const getUser = /* GraphQL */ `
         contactConsent
         status
         videoLink
+        manualVideoLink
         createdOn
         updatedOn
         icpfCmpmFormUserId
@@ -1607,6 +1608,9 @@ export const getLearningPathCourse = /* GraphQL */ `
         subscriptionPrice
         stripeLink
         callout
+        thirtyDay
+        ninetyDay
+        threeSixtyDay
         createdAt
         updatedAt
         customerLibaryClientCoursesId
@@ -2005,6 +2009,7 @@ export const getIcpfCmpmForm = /* GraphQL */ `
       contactConsent
       status
       videoLink
+      manualVideoLink
       createdOn
       updatedOn
       icpfCmpmFormUserId
@@ -2061,6 +2066,7 @@ export const listIcpfCmpmForms = /* GraphQL */ `
         contactConsent
         status
         videoLink
+        manualVideoLink
         createdOn
         updatedOn
         icpfCmpmFormUserId
@@ -2667,6 +2673,9 @@ export const getLMSCourse = /* GraphQL */ `
         nextToken
         __typename
       }
+      thirtyDay
+      ninetyDay
+      threeSixtyDay
       createdAt
       updatedAt
       customerLibaryClientCoursesId
@@ -2712,6 +2721,9 @@ export const listLMSCourses = /* GraphQL */ `
         subscriptionPrice
         stripeLink
         callout
+        thirtyDay
+        ninetyDay
+        threeSixtyDay
         createdAt
         updatedAt
         customerLibaryClientCoursesId
@@ -3286,6 +3298,12 @@ export const getCustomerLibary = /* GraphQL */ `
       availableCodes
       usedCodes
       promotionId
+      thinkificGroupId
+      thinkificGroupName
+      reportLayouts {
+        nextToken
+        __typename
+      }
       createdAt
       updatedAt
       __typename
@@ -3323,6 +3341,70 @@ export const listCustomerLibaries = /* GraphQL */ `
         availableCodes
         usedCodes
         promotionId
+        thinkificGroupId
+        thinkificGroupName
+        createdAt
+        updatedAt
+        __typename
+      }
+      nextToken
+      __typename
+    }
+  }
+`;
+export const getReportLayout = /* GraphQL */ `
+  query GetReportLayout($id: ID!) {
+    getReportLayout(id: $id) {
+      id
+      libraryId
+      library {
+        id
+        displayName
+        slug
+        description
+        link
+        logo
+        email
+        primaryColor
+        highlightColor
+        pdf
+        slide
+        video
+        addOns
+        backgroundImage
+        code
+        status
+        availableCodes
+        usedCodes
+        promotionId
+        thinkificGroupId
+        thinkificGroupName
+        createdAt
+        updatedAt
+        __typename
+      }
+      name
+      title
+      modules
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const listReportLayouts = /* GraphQL */ `
+  query ListReportLayouts(
+    $filter: ModelReportLayoutFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    listReportLayouts(filter: $filter, limit: $limit, nextToken: $nextToken) {
+      items {
+        id
+        libraryId
+        name
+        title
+        modules
         createdAt
         updatedAt
         __typename
@@ -3765,6 +3847,8 @@ export const getAbTestExposure = /* GraphQL */ `
       source
       referrer
       ipAddress
+      city
+      region
       country
       createdAt
       updatedAt
@@ -3796,6 +3880,8 @@ export const listAbTestExposures = /* GraphQL */ `
         source
         referrer
         ipAddress
+        city
+        region
         country
         createdAt
         updatedAt
@@ -3811,10 +3897,13 @@ export const getAbTestEvent = /* GraphQL */ `
     getAbTestEvent(id: $id) {
       id
       experimentKey
+      experimentDay
       eventName
       variant
       sessionId
+      visitorId
       userID
+      email
       pagePath
       deviceType
       acquisitionChannel
@@ -3838,9 +3927,13 @@ export const getAbTestEvent = /* GraphQL */ `
       grossAmountCents
       netAmountCents
       discountAmountCents
+      matchedIntentId
+      attributionMethod
       source
       reason
       ipAddress
+      city
+      region
       country
       metadata
       createdAt
@@ -3859,10 +3952,13 @@ export const listAbTestEvents = /* GraphQL */ `
       items {
         id
         experimentKey
+        experimentDay
         eventName
         variant
         sessionId
+        visitorId
         userID
+        email
         pagePath
         deviceType
         acquisitionChannel
@@ -3886,11 +3982,81 @@ export const listAbTestEvents = /* GraphQL */ `
         grossAmountCents
         netAmountCents
         discountAmountCents
+        matchedIntentId
+        attributionMethod
         source
         reason
         ipAddress
+        city
+        region
         country
         metadata
+        createdAt
+        updatedAt
+        __typename
+      }
+      nextToken
+      __typename
+    }
+  }
+`;
+export const getAbWebhookReceipt = /* GraphQL */ `
+  query GetAbWebhookReceipt($id: ID!) {
+    getAbWebhookReceipt(id: $id) {
+      id
+      source
+      receiptDay
+      experimentKey
+      decision
+      reason
+      action
+      status
+      thinkificOrderId
+      externalOrderId
+      orderNumber
+      email
+      variant
+      matchedSessionId
+      matchedIntentId
+      attributionMethod
+      abEventId
+      rawPayload
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const listAbWebhookReceipts = /* GraphQL */ `
+  query ListAbWebhookReceipts(
+    $filter: ModelAbWebhookReceiptFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    listAbWebhookReceipts(
+      filter: $filter
+      limit: $limit
+      nextToken: $nextToken
+    ) {
+      items {
+        id
+        source
+        receiptDay
+        experimentKey
+        decision
+        reason
+        action
+        status
+        thinkificOrderId
+        externalOrderId
+        orderNumber
+        email
+        variant
+        matchedSessionId
+        matchedIntentId
+        attributionMethod
+        abEventId
+        rawPayload
         createdAt
         updatedAt
         __typename
@@ -4820,6 +4986,512 @@ export const listEmailSubscriptions = /* GraphQL */ `
     }
   }
 `;
+export const getEmailTemplate = /* GraphQL */ `
+  query GetEmailTemplate($id: ID!) {
+    getEmailTemplate(id: $id) {
+      id
+      slug
+      name
+      subject
+      preheader
+      description
+      status
+      documentJson
+      updatedBy
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const listEmailTemplates = /* GraphQL */ `
+  query ListEmailTemplates(
+    $filter: ModelEmailTemplateFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    listEmailTemplates(filter: $filter, limit: $limit, nextToken: $nextToken) {
+      items {
+        id
+        slug
+        name
+        subject
+        preheader
+        description
+        status
+        documentJson
+        updatedBy
+        createdAt
+        updatedAt
+        __typename
+      }
+      nextToken
+      __typename
+    }
+  }
+`;
+export const getEmailContact = /* GraphQL */ `
+  query GetEmailContact($id: ID!) {
+    getEmailContact(id: $id) {
+      id
+      email
+      firstName
+      lastName
+      searchText
+      status
+      source
+      thinkificUserId
+      thinkificMatched
+      enrollmentCount
+      hasPurchase
+      acContactId
+      unsubscribedAt
+      archivedAt
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const listEmailContacts = /* GraphQL */ `
+  query ListEmailContacts(
+    $filter: ModelEmailContactFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    listEmailContacts(filter: $filter, limit: $limit, nextToken: $nextToken) {
+      items {
+        id
+        email
+        firstName
+        lastName
+        searchText
+        status
+        source
+        thinkificUserId
+        thinkificMatched
+        enrollmentCount
+        hasPurchase
+        acContactId
+        unsubscribedAt
+        archivedAt
+        createdAt
+        updatedAt
+        __typename
+      }
+      nextToken
+      __typename
+    }
+  }
+`;
+export const getEmailList = /* GraphQL */ `
+  query GetEmailList($id: ID!) {
+    getEmailList(id: $id) {
+      id
+      name
+      description
+      status
+      memberCount
+      archivedAt
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const listEmailLists = /* GraphQL */ `
+  query ListEmailLists(
+    $filter: ModelEmailListFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    listEmailLists(filter: $filter, limit: $limit, nextToken: $nextToken) {
+      items {
+        id
+        name
+        description
+        status
+        memberCount
+        archivedAt
+        createdAt
+        updatedAt
+        __typename
+      }
+      nextToken
+      __typename
+    }
+  }
+`;
+export const getEmailListMembership = /* GraphQL */ `
+  query GetEmailListMembership($id: ID!) {
+    getEmailListMembership(id: $id) {
+      id
+      listId
+      contactId
+      email
+      status
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const listEmailListMemberships = /* GraphQL */ `
+  query ListEmailListMemberships(
+    $filter: ModelEmailListMembershipFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    listEmailListMemberships(
+      filter: $filter
+      limit: $limit
+      nextToken: $nextToken
+    ) {
+      items {
+        id
+        listId
+        contactId
+        email
+        status
+        createdAt
+        updatedAt
+        __typename
+      }
+      nextToken
+      __typename
+    }
+  }
+`;
+export const getEmailCampaign = /* GraphQL */ `
+  query GetEmailCampaign($id: ID!) {
+    getEmailCampaign(id: $id) {
+      id
+      name
+      subject
+      preheader
+      fromName
+      fromEmail
+      templateId
+      listId
+      status
+      scheduledAt
+      htmlSnapshot
+      recipientCount
+      sentCount
+      failedCount
+      openCount
+      clickCount
+      unsubCount
+      sentAt
+      error
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const listEmailCampaigns = /* GraphQL */ `
+  query ListEmailCampaigns(
+    $filter: ModelEmailCampaignFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    listEmailCampaigns(filter: $filter, limit: $limit, nextToken: $nextToken) {
+      items {
+        id
+        name
+        subject
+        preheader
+        fromName
+        fromEmail
+        templateId
+        listId
+        status
+        scheduledAt
+        htmlSnapshot
+        recipientCount
+        sentCount
+        failedCount
+        openCount
+        clickCount
+        unsubCount
+        sentAt
+        error
+        createdAt
+        updatedAt
+        __typename
+      }
+      nextToken
+      __typename
+    }
+  }
+`;
+export const getEmailSend = /* GraphQL */ `
+  query GetEmailSend($id: ID!) {
+    getEmailSend(id: $id) {
+      id
+      campaignId
+      automationRunId
+      contactId
+      email
+      status
+      sesMessageId
+      openedAt
+      openCount
+      clickedAt
+      clickCount
+      lastClickedUrl
+      skipReason
+      error
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const listEmailSends = /* GraphQL */ `
+  query ListEmailSends(
+    $filter: ModelEmailSendFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    listEmailSends(filter: $filter, limit: $limit, nextToken: $nextToken) {
+      items {
+        id
+        campaignId
+        automationRunId
+        contactId
+        email
+        status
+        sesMessageId
+        openedAt
+        openCount
+        clickedAt
+        clickCount
+        lastClickedUrl
+        skipReason
+        error
+        createdAt
+        updatedAt
+        __typename
+      }
+      nextToken
+      __typename
+    }
+  }
+`;
+export const getEmailAutomation = /* GraphQL */ `
+  query GetEmailAutomation($id: ID!) {
+    getEmailAutomation(id: $id) {
+      id
+      key
+      name
+      status
+      sendDay
+      sendTime
+      subject
+      preheader
+      fromName
+      fromEmail
+      templateId
+      audience
+      lastRunOn
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const listEmailAutomations = /* GraphQL */ `
+  query ListEmailAutomations(
+    $filter: ModelEmailAutomationFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    listEmailAutomations(
+      filter: $filter
+      limit: $limit
+      nextToken: $nextToken
+    ) {
+      items {
+        id
+        key
+        name
+        status
+        sendDay
+        sendTime
+        subject
+        preheader
+        fromName
+        fromEmail
+        templateId
+        audience
+        lastRunOn
+        createdAt
+        updatedAt
+        __typename
+      }
+      nextToken
+      __typename
+    }
+  }
+`;
+export const getEmailAutomationRun = /* GraphQL */ `
+  query GetEmailAutomationRun($id: ID!) {
+    getEmailAutomationRun(id: $id) {
+      id
+      automationId
+      runOn
+      status
+      subject
+      recipientCount
+      sentCount
+      failedCount
+      skippedCount
+      openCount
+      clickCount
+      unsubCount
+      startedAt
+      finishedAt
+      error
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const listEmailAutomationRuns = /* GraphQL */ `
+  query ListEmailAutomationRuns(
+    $filter: ModelEmailAutomationRunFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    listEmailAutomationRuns(
+      filter: $filter
+      limit: $limit
+      nextToken: $nextToken
+    ) {
+      items {
+        id
+        automationId
+        runOn
+        status
+        subject
+        recipientCount
+        sentCount
+        failedCount
+        skippedCount
+        openCount
+        clickCount
+        unsubCount
+        startedAt
+        finishedAt
+        error
+        createdAt
+        updatedAt
+        __typename
+      }
+      nextToken
+      __typename
+    }
+  }
+`;
+export const getInternalDigestRecipient = /* GraphQL */ `
+  query GetInternalDigestRecipient($id: ID!) {
+    getInternalDigestRecipient(id: $id) {
+      id
+      email
+      name
+      active
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const listInternalDigestRecipients = /* GraphQL */ `
+  query ListInternalDigestRecipients(
+    $filter: ModelInternalDigestRecipientFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    listInternalDigestRecipients(
+      filter: $filter
+      limit: $limit
+      nextToken: $nextToken
+    ) {
+      items {
+        id
+        email
+        name
+        active
+        createdAt
+        updatedAt
+        __typename
+      }
+      nextToken
+      __typename
+    }
+  }
+`;
+export const getInternalDigestSend = /* GraphQL */ `
+  query GetInternalDigestSend($id: ID!) {
+    getInternalDigestSend(id: $id) {
+      id
+      kind
+      sentAt
+      subject
+      html
+      text
+      periodStart
+      periodEnd
+      recipientCount
+      recipients
+      status
+      trigger
+      error
+      statsJson
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const listInternalDigestSends = /* GraphQL */ `
+  query ListInternalDigestSends(
+    $filter: ModelInternalDigestSendFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    listInternalDigestSends(
+      filter: $filter
+      limit: $limit
+      nextToken: $nextToken
+    ) {
+      items {
+        id
+        kind
+        sentAt
+        subject
+        html
+        text
+        periodStart
+        periodEnd
+        recipientCount
+        recipients
+        status
+        trigger
+        error
+        statsJson
+        createdAt
+        updatedAt
+        __typename
+      }
+      nextToken
+      __typename
+    }
+  }
+`;
 export const getImageObject = /* GraphQL */ `
   query GetImageObject($id: ID!) {
     getImageObject(id: $id) {
@@ -5131,6 +5803,9 @@ export const getCourseReview = /* GraphQL */ `
         subscriptionPrice
         stripeLink
         callout
+        thirtyDay
+        ninetyDay
+        threeSixtyDay
         createdAt
         updatedAt
         customerLibaryClientCoursesId
@@ -5667,6 +6342,232 @@ export const listCourseOutlineRequests = /* GraphQL */ `
         country
         device
         page
+        createdAt
+        updatedAt
+        __typename
+      }
+      nextToken
+      __typename
+    }
+  }
+`;
+export const getSpsInterest = /* GraphQL */ `
+  query GetSpsInterest($id: ID!) {
+    getSpsInterest(id: $id) {
+      id
+      name
+      email
+      company
+      interest
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const listSpsInterests = /* GraphQL */ `
+  query ListSpsInterests(
+    $filter: ModelSpsInterestFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    listSpsInterests(filter: $filter, limit: $limit, nextToken: $nextToken) {
+      items {
+        id
+        name
+        email
+        company
+        interest
+        createdAt
+        updatedAt
+        __typename
+      }
+      nextToken
+      __typename
+    }
+  }
+`;
+export const getEducationPartnerLead = /* GraphQL */ `
+  query GetEducationPartnerLead($id: ID!) {
+    getEducationPartnerLead(id: $id) {
+      id
+      email
+      page
+      pageTitle
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const listEducationPartnerLeads = /* GraphQL */ `
+  query ListEducationPartnerLeads(
+    $filter: ModelEducationPartnerLeadFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    listEducationPartnerLeads(
+      filter: $filter
+      limit: $limit
+      nextToken: $nextToken
+    ) {
+      items {
+        id
+        email
+        page
+        pageTitle
+        createdAt
+        updatedAt
+        __typename
+      }
+      nextToken
+      __typename
+    }
+  }
+`;
+export const getLibraryEnrollmentRequest = /* GraphQL */ `
+  query GetLibraryEnrollmentRequest($id: ID!) {
+    getLibraryEnrollmentRequest(id: $id) {
+      id
+      librarySlug
+      status
+      requesterUserID
+      requesterEmail
+      requesterName
+      salesLeaderUserID
+      salesLeaderEmail
+      salesLeaderName
+      courseId
+      courseName
+      courseImage
+      courseLink
+      thinkificId
+      couponCode
+      decisionToken
+      decidedAt
+      decidedByEmail
+      declineReason
+      thinkificEnrollmentId
+      page
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const listLibraryEnrollmentRequests = /* GraphQL */ `
+  query ListLibraryEnrollmentRequests(
+    $filter: ModelLibraryEnrollmentRequestFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    listLibraryEnrollmentRequests(
+      filter: $filter
+      limit: $limit
+      nextToken: $nextToken
+    ) {
+      items {
+        id
+        librarySlug
+        status
+        requesterUserID
+        requesterEmail
+        requesterName
+        salesLeaderUserID
+        salesLeaderEmail
+        salesLeaderName
+        courseId
+        courseName
+        courseImage
+        courseLink
+        thinkificId
+        couponCode
+        decisionToken
+        decidedAt
+        decidedByEmail
+        declineReason
+        thinkificEnrollmentId
+        page
+        createdAt
+        updatedAt
+        __typename
+      }
+      nextToken
+      __typename
+    }
+  }
+`;
+export const getNetworkDistributionSalesLeader = /* GraphQL */ `
+  query GetNetworkDistributionSalesLeader($id: ID!) {
+    getNetworkDistributionSalesLeader(id: $id) {
+      id
+      email
+      name
+      active
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const listNetworkDistributionSalesLeaders = /* GraphQL */ `
+  query ListNetworkDistributionSalesLeaders(
+    $filter: ModelNetworkDistributionSalesLeaderFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    listNetworkDistributionSalesLeaders(
+      filter: $filter
+      limit: $limit
+      nextToken: $nextToken
+    ) {
+      items {
+        id
+        email
+        name
+        active
+        createdAt
+        updatedAt
+        __typename
+      }
+      nextToken
+      __typename
+    }
+  }
+`;
+export const getNetworkDistributionLearner = /* GraphQL */ `
+  query GetNetworkDistributionLearner($id: ID!) {
+    getNetworkDistributionLearner(id: $id) {
+      id
+      email
+      salesLeaderEmail
+      name
+      firstApprovedAt
+      status
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const listNetworkDistributionLearners = /* GraphQL */ `
+  query ListNetworkDistributionLearners(
+    $filter: ModelNetworkDistributionLearnerFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    listNetworkDistributionLearners(
+      filter: $filter
+      limit: $limit
+      nextToken: $nextToken
+    ) {
+      items {
+        id
+        email
+        salesLeaderEmail
+        name
+        firstApprovedAt
+        status
         createdAt
         updatedAt
         __typename
@@ -6607,6 +7508,9 @@ export const getUserWishlist = /* GraphQL */ `
         subscriptionPrice
         stripeLink
         callout
+        thirtyDay
+        ninetyDay
+        threeSixtyDay
         createdAt
         updatedAt
         customerLibaryClientCoursesId
@@ -6694,6 +7598,9 @@ export const getCollectionCourses = /* GraphQL */ `
         subscriptionPrice
         stripeLink
         callout
+        thirtyDay
+        ninetyDay
+        threeSixtyDay
         createdAt
         updatedAt
         customerLibaryClientCoursesId
@@ -6776,6 +7683,9 @@ export const getCirriculumCourses = /* GraphQL */ `
         subscriptionPrice
         stripeLink
         callout
+        thirtyDay
+        ninetyDay
+        threeSixtyDay
         createdAt
         updatedAt
         customerLibaryClientCoursesId
@@ -6848,6 +7758,9 @@ export const getCourseLessons = /* GraphQL */ `
         subscriptionPrice
         stripeLink
         callout
+        thirtyDay
+        ninetyDay
+        threeSixtyDay
         createdAt
         updatedAt
         customerLibaryClientCoursesId
@@ -6929,6 +7842,9 @@ export const getCourseInstructors = /* GraphQL */ `
         subscriptionPrice
         stripeLink
         callout
+        thirtyDay
+        ninetyDay
+        threeSixtyDay
         createdAt
         updatedAt
         customerLibaryClientCoursesId
@@ -7014,6 +7930,9 @@ export const getAchievementCourses = /* GraphQL */ `
         subscriptionPrice
         stripeLink
         callout
+        thirtyDay
+        ninetyDay
+        threeSixtyDay
         createdAt
         updatedAt
         customerLibaryClientCoursesId
@@ -7096,6 +8015,9 @@ export const getPartnerCourses = /* GraphQL */ `
         subscriptionPrice
         stripeLink
         callout
+        thirtyDay
+        ninetyDay
+        threeSixtyDay
         createdAt
         updatedAt
         customerLibaryClientCoursesId
@@ -7173,6 +8095,9 @@ export const getLibraryCourses = /* GraphQL */ `
         subscriptionPrice
         stripeLink
         callout
+        thirtyDay
+        ninetyDay
+        threeSixtyDay
         createdAt
         updatedAt
         customerLibaryClientCoursesId
@@ -7199,6 +8124,8 @@ export const getLibraryCourses = /* GraphQL */ `
         availableCodes
         usedCodes
         promotionId
+        thinkificGroupId
+        thinkificGroupName
         createdAt
         updatedAt
         __typename
@@ -7265,6 +8192,9 @@ export const getCourseGlossaryTerms = /* GraphQL */ `
         subscriptionPrice
         stripeLink
         callout
+        thirtyDay
+        ninetyDay
+        threeSixtyDay
         createdAt
         updatedAt
         customerLibaryClientCoursesId
@@ -8474,6 +9404,9 @@ export const lMSCoursesByThinkificId = /* GraphQL */ `
         subscriptionPrice
         stripeLink
         callout
+        thirtyDay
+        ninetyDay
+        threeSixtyDay
         createdAt
         updatedAt
         customerLibaryClientCoursesId
@@ -8530,6 +9463,9 @@ export const lMSCoursesBySlug = /* GraphQL */ `
         subscriptionPrice
         stripeLink
         callout
+        thirtyDay
+        ninetyDay
+        threeSixtyDay
         createdAt
         updatedAt
         customerLibaryClientCoursesId
@@ -8703,6 +9639,38 @@ export const customerLibariesBySlug = /* GraphQL */ `
         availableCodes
         usedCodes
         promotionId
+        thinkificGroupId
+        thinkificGroupName
+        createdAt
+        updatedAt
+        __typename
+      }
+      nextToken
+      __typename
+    }
+  }
+`;
+export const layoutsByLibrary = /* GraphQL */ `
+  query LayoutsByLibrary(
+    $libraryId: ID!
+    $sortDirection: ModelSortDirection
+    $filter: ModelReportLayoutFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    layoutsByLibrary(
+      libraryId: $libraryId
+      sortDirection: $sortDirection
+      filter: $filter
+      limit: $limit
+      nextToken: $nextToken
+    ) {
+      items {
+        id
+        libraryId
+        name
+        title
+        modules
         createdAt
         updatedAt
         __typename
@@ -8879,6 +9847,8 @@ export const abTestExposuresByExperimentKeyAndCreatedAt = /* GraphQL */ `
         source
         referrer
         ipAddress
+        city
+        region
         country
         createdAt
         updatedAt
@@ -8923,6 +9893,8 @@ export const abTestExposuresBySessionIdAndCreatedAt = /* GraphQL */ `
         source
         referrer
         ipAddress
+        city
+        region
         country
         createdAt
         updatedAt
@@ -8967,6 +9939,8 @@ export const abTestExposuresByUserIDAndCreatedAt = /* GraphQL */ `
         source
         referrer
         ipAddress
+        city
+        region
         country
         createdAt
         updatedAt
@@ -8997,10 +9971,13 @@ export const abTestEventsByExperimentKeyAndCreatedAt = /* GraphQL */ `
       items {
         id
         experimentKey
+        experimentDay
         eventName
         variant
         sessionId
+        visitorId
         userID
+        email
         pagePath
         deviceType
         acquisitionChannel
@@ -9024,9 +10001,81 @@ export const abTestEventsByExperimentKeyAndCreatedAt = /* GraphQL */ `
         grossAmountCents
         netAmountCents
         discountAmountCents
+        matchedIntentId
+        attributionMethod
         source
         reason
         ipAddress
+        city
+        region
+        country
+        metadata
+        createdAt
+        updatedAt
+        __typename
+      }
+      nextToken
+      __typename
+    }
+  }
+`;
+export const abTestEventsByExperimentDayAndCreatedAt = /* GraphQL */ `
+  query AbTestEventsByExperimentDayAndCreatedAt(
+    $experimentDay: String!
+    $createdAt: ModelStringKeyConditionInput
+    $sortDirection: ModelSortDirection
+    $filter: ModelAbTestEventFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    abTestEventsByExperimentDayAndCreatedAt(
+      experimentDay: $experimentDay
+      createdAt: $createdAt
+      sortDirection: $sortDirection
+      filter: $filter
+      limit: $limit
+      nextToken: $nextToken
+    ) {
+      items {
+        id
+        experimentKey
+        experimentDay
+        eventName
+        variant
+        sessionId
+        visitorId
+        userID
+        email
+        pagePath
+        deviceType
+        acquisitionChannel
+        acquisitionSource
+        acquisitionMedium
+        acquisitionCampaign
+        acquisitionTerm
+        acquisitionContent
+        referrer
+        previousPath
+        nextPath
+        metric
+        value
+        orderId
+        externalOrderId
+        orderNumber
+        purchaserEmail
+        purchaserFirstName
+        purchaserLastName
+        couponCode
+        grossAmountCents
+        netAmountCents
+        discountAmountCents
+        matchedIntentId
+        attributionMethod
+        source
+        reason
+        ipAddress
+        city
+        region
         country
         metadata
         createdAt
@@ -9058,10 +10107,13 @@ export const abTestEventsByEventNameAndCreatedAt = /* GraphQL */ `
       items {
         id
         experimentKey
+        experimentDay
         eventName
         variant
         sessionId
+        visitorId
         userID
+        email
         pagePath
         deviceType
         acquisitionChannel
@@ -9085,9 +10137,13 @@ export const abTestEventsByEventNameAndCreatedAt = /* GraphQL */ `
         grossAmountCents
         netAmountCents
         discountAmountCents
+        matchedIntentId
+        attributionMethod
         source
         reason
         ipAddress
+        city
+        region
         country
         metadata
         createdAt
@@ -9119,10 +10175,13 @@ export const abTestEventsBySessionIdAndCreatedAt = /* GraphQL */ `
       items {
         id
         experimentKey
+        experimentDay
         eventName
         variant
         sessionId
+        visitorId
         userID
+        email
         pagePath
         deviceType
         acquisitionChannel
@@ -9146,9 +10205,81 @@ export const abTestEventsBySessionIdAndCreatedAt = /* GraphQL */ `
         grossAmountCents
         netAmountCents
         discountAmountCents
+        matchedIntentId
+        attributionMethod
         source
         reason
         ipAddress
+        city
+        region
+        country
+        metadata
+        createdAt
+        updatedAt
+        __typename
+      }
+      nextToken
+      __typename
+    }
+  }
+`;
+export const abTestEventsByVisitorIdAndCreatedAt = /* GraphQL */ `
+  query AbTestEventsByVisitorIdAndCreatedAt(
+    $visitorId: String!
+    $createdAt: ModelStringKeyConditionInput
+    $sortDirection: ModelSortDirection
+    $filter: ModelAbTestEventFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    abTestEventsByVisitorIdAndCreatedAt(
+      visitorId: $visitorId
+      createdAt: $createdAt
+      sortDirection: $sortDirection
+      filter: $filter
+      limit: $limit
+      nextToken: $nextToken
+    ) {
+      items {
+        id
+        experimentKey
+        experimentDay
+        eventName
+        variant
+        sessionId
+        visitorId
+        userID
+        email
+        pagePath
+        deviceType
+        acquisitionChannel
+        acquisitionSource
+        acquisitionMedium
+        acquisitionCampaign
+        acquisitionTerm
+        acquisitionContent
+        referrer
+        previousPath
+        nextPath
+        metric
+        value
+        orderId
+        externalOrderId
+        orderNumber
+        purchaserEmail
+        purchaserFirstName
+        purchaserLastName
+        couponCode
+        grossAmountCents
+        netAmountCents
+        discountAmountCents
+        matchedIntentId
+        attributionMethod
+        source
+        reason
+        ipAddress
+        city
+        region
         country
         metadata
         createdAt
@@ -9180,10 +10311,13 @@ export const abTestEventsByUserIDAndCreatedAt = /* GraphQL */ `
       items {
         id
         experimentKey
+        experimentDay
         eventName
         variant
         sessionId
+        visitorId
         userID
+        email
         pagePath
         deviceType
         acquisitionChannel
@@ -9207,11 +10341,173 @@ export const abTestEventsByUserIDAndCreatedAt = /* GraphQL */ `
         grossAmountCents
         netAmountCents
         discountAmountCents
+        matchedIntentId
+        attributionMethod
         source
         reason
         ipAddress
+        city
+        region
         country
         metadata
+        createdAt
+        updatedAt
+        __typename
+      }
+      nextToken
+      __typename
+    }
+  }
+`;
+export const abTestEventsByEmailAndCreatedAt = /* GraphQL */ `
+  query AbTestEventsByEmailAndCreatedAt(
+    $email: String!
+    $createdAt: ModelStringKeyConditionInput
+    $sortDirection: ModelSortDirection
+    $filter: ModelAbTestEventFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    abTestEventsByEmailAndCreatedAt(
+      email: $email
+      createdAt: $createdAt
+      sortDirection: $sortDirection
+      filter: $filter
+      limit: $limit
+      nextToken: $nextToken
+    ) {
+      items {
+        id
+        experimentKey
+        experimentDay
+        eventName
+        variant
+        sessionId
+        visitorId
+        userID
+        email
+        pagePath
+        deviceType
+        acquisitionChannel
+        acquisitionSource
+        acquisitionMedium
+        acquisitionCampaign
+        acquisitionTerm
+        acquisitionContent
+        referrer
+        previousPath
+        nextPath
+        metric
+        value
+        orderId
+        externalOrderId
+        orderNumber
+        purchaserEmail
+        purchaserFirstName
+        purchaserLastName
+        couponCode
+        grossAmountCents
+        netAmountCents
+        discountAmountCents
+        matchedIntentId
+        attributionMethod
+        source
+        reason
+        ipAddress
+        city
+        region
+        country
+        metadata
+        createdAt
+        updatedAt
+        __typename
+      }
+      nextToken
+      __typename
+    }
+  }
+`;
+export const abWebhookReceiptsBySourceAndCreatedAt = /* GraphQL */ `
+  query AbWebhookReceiptsBySourceAndCreatedAt(
+    $source: String!
+    $createdAt: ModelStringKeyConditionInput
+    $sortDirection: ModelSortDirection
+    $filter: ModelAbWebhookReceiptFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    abWebhookReceiptsBySourceAndCreatedAt(
+      source: $source
+      createdAt: $createdAt
+      sortDirection: $sortDirection
+      filter: $filter
+      limit: $limit
+      nextToken: $nextToken
+    ) {
+      items {
+        id
+        source
+        receiptDay
+        experimentKey
+        decision
+        reason
+        action
+        status
+        thinkificOrderId
+        externalOrderId
+        orderNumber
+        email
+        variant
+        matchedSessionId
+        matchedIntentId
+        attributionMethod
+        abEventId
+        rawPayload
+        createdAt
+        updatedAt
+        __typename
+      }
+      nextToken
+      __typename
+    }
+  }
+`;
+export const abWebhookReceiptsByReceiptDayAndCreatedAt = /* GraphQL */ `
+  query AbWebhookReceiptsByReceiptDayAndCreatedAt(
+    $receiptDay: String!
+    $createdAt: ModelStringKeyConditionInput
+    $sortDirection: ModelSortDirection
+    $filter: ModelAbWebhookReceiptFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    abWebhookReceiptsByReceiptDayAndCreatedAt(
+      receiptDay: $receiptDay
+      createdAt: $createdAt
+      sortDirection: $sortDirection
+      filter: $filter
+      limit: $limit
+      nextToken: $nextToken
+    ) {
+      items {
+        id
+        source
+        receiptDay
+        experimentKey
+        decision
+        reason
+        action
+        status
+        thinkificOrderId
+        externalOrderId
+        orderNumber
+        email
+        variant
+        matchedSessionId
+        matchedIntentId
+        attributionMethod
+        abEventId
+        rawPayload
         createdAt
         updatedAt
         __typename
@@ -9522,6 +10818,365 @@ export const emailSubscriptionsByEmail = /* GraphQL */ `
     }
   }
 `;
+export const emailTemplateBySlug = /* GraphQL */ `
+  query EmailTemplateBySlug(
+    $slug: String!
+    $sortDirection: ModelSortDirection
+    $filter: ModelEmailTemplateFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    emailTemplateBySlug(
+      slug: $slug
+      sortDirection: $sortDirection
+      filter: $filter
+      limit: $limit
+      nextToken: $nextToken
+    ) {
+      items {
+        id
+        slug
+        name
+        subject
+        preheader
+        description
+        status
+        documentJson
+        updatedBy
+        createdAt
+        updatedAt
+        __typename
+      }
+      nextToken
+      __typename
+    }
+  }
+`;
+export const emailContactByEmail = /* GraphQL */ `
+  query EmailContactByEmail(
+    $email: String!
+    $sortDirection: ModelSortDirection
+    $filter: ModelEmailContactFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    emailContactByEmail(
+      email: $email
+      sortDirection: $sortDirection
+      filter: $filter
+      limit: $limit
+      nextToken: $nextToken
+    ) {
+      items {
+        id
+        email
+        firstName
+        lastName
+        searchText
+        status
+        source
+        thinkificUserId
+        thinkificMatched
+        enrollmentCount
+        hasPurchase
+        acContactId
+        unsubscribedAt
+        archivedAt
+        createdAt
+        updatedAt
+        __typename
+      }
+      nextToken
+      __typename
+    }
+  }
+`;
+export const membershipByList = /* GraphQL */ `
+  query MembershipByList(
+    $listId: ID!
+    $sortDirection: ModelSortDirection
+    $filter: ModelEmailListMembershipFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    membershipByList(
+      listId: $listId
+      sortDirection: $sortDirection
+      filter: $filter
+      limit: $limit
+      nextToken: $nextToken
+    ) {
+      items {
+        id
+        listId
+        contactId
+        email
+        status
+        createdAt
+        updatedAt
+        __typename
+      }
+      nextToken
+      __typename
+    }
+  }
+`;
+export const membershipByContact = /* GraphQL */ `
+  query MembershipByContact(
+    $contactId: ID!
+    $sortDirection: ModelSortDirection
+    $filter: ModelEmailListMembershipFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    membershipByContact(
+      contactId: $contactId
+      sortDirection: $sortDirection
+      filter: $filter
+      limit: $limit
+      nextToken: $nextToken
+    ) {
+      items {
+        id
+        listId
+        contactId
+        email
+        status
+        createdAt
+        updatedAt
+        __typename
+      }
+      nextToken
+      __typename
+    }
+  }
+`;
+export const emailSendByCampaign = /* GraphQL */ `
+  query EmailSendByCampaign(
+    $campaignId: ID!
+    $sortDirection: ModelSortDirection
+    $filter: ModelEmailSendFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    emailSendByCampaign(
+      campaignId: $campaignId
+      sortDirection: $sortDirection
+      filter: $filter
+      limit: $limit
+      nextToken: $nextToken
+    ) {
+      items {
+        id
+        campaignId
+        automationRunId
+        contactId
+        email
+        status
+        sesMessageId
+        openedAt
+        openCount
+        clickedAt
+        clickCount
+        lastClickedUrl
+        skipReason
+        error
+        createdAt
+        updatedAt
+        __typename
+      }
+      nextToken
+      __typename
+    }
+  }
+`;
+export const emailSendByRun = /* GraphQL */ `
+  query EmailSendByRun(
+    $automationRunId: ID!
+    $sortDirection: ModelSortDirection
+    $filter: ModelEmailSendFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    emailSendByRun(
+      automationRunId: $automationRunId
+      sortDirection: $sortDirection
+      filter: $filter
+      limit: $limit
+      nextToken: $nextToken
+    ) {
+      items {
+        id
+        campaignId
+        automationRunId
+        contactId
+        email
+        status
+        sesMessageId
+        openedAt
+        openCount
+        clickedAt
+        clickCount
+        lastClickedUrl
+        skipReason
+        error
+        createdAt
+        updatedAt
+        __typename
+      }
+      nextToken
+      __typename
+    }
+  }
+`;
+export const emailAutomationByKey = /* GraphQL */ `
+  query EmailAutomationByKey(
+    $key: String!
+    $sortDirection: ModelSortDirection
+    $filter: ModelEmailAutomationFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    emailAutomationByKey(
+      key: $key
+      sortDirection: $sortDirection
+      filter: $filter
+      limit: $limit
+      nextToken: $nextToken
+    ) {
+      items {
+        id
+        key
+        name
+        status
+        sendDay
+        sendTime
+        subject
+        preheader
+        fromName
+        fromEmail
+        templateId
+        audience
+        lastRunOn
+        createdAt
+        updatedAt
+        __typename
+      }
+      nextToken
+      __typename
+    }
+  }
+`;
+export const emailAutomationRunByAutomation = /* GraphQL */ `
+  query EmailAutomationRunByAutomation(
+    $automationId: ID!
+    $sortDirection: ModelSortDirection
+    $filter: ModelEmailAutomationRunFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    emailAutomationRunByAutomation(
+      automationId: $automationId
+      sortDirection: $sortDirection
+      filter: $filter
+      limit: $limit
+      nextToken: $nextToken
+    ) {
+      items {
+        id
+        automationId
+        runOn
+        status
+        subject
+        recipientCount
+        sentCount
+        failedCount
+        skippedCount
+        openCount
+        clickCount
+        unsubCount
+        startedAt
+        finishedAt
+        error
+        createdAt
+        updatedAt
+        __typename
+      }
+      nextToken
+      __typename
+    }
+  }
+`;
+export const internalDigestRecipientByEmail = /* GraphQL */ `
+  query InternalDigestRecipientByEmail(
+    $email: String!
+    $sortDirection: ModelSortDirection
+    $filter: ModelInternalDigestRecipientFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    internalDigestRecipientByEmail(
+      email: $email
+      sortDirection: $sortDirection
+      filter: $filter
+      limit: $limit
+      nextToken: $nextToken
+    ) {
+      items {
+        id
+        email
+        name
+        active
+        createdAt
+        updatedAt
+        __typename
+      }
+      nextToken
+      __typename
+    }
+  }
+`;
+export const internalDigestSendsByKindAndSentAt = /* GraphQL */ `
+  query InternalDigestSendsByKindAndSentAt(
+    $kind: String!
+    $sentAt: ModelStringKeyConditionInput
+    $sortDirection: ModelSortDirection
+    $filter: ModelInternalDigestSendFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    internalDigestSendsByKindAndSentAt(
+      kind: $kind
+      sentAt: $sentAt
+      sortDirection: $sortDirection
+      filter: $filter
+      limit: $limit
+      nextToken: $nextToken
+    ) {
+      items {
+        id
+        kind
+        sentAt
+        subject
+        html
+        text
+        periodStart
+        periodEnd
+        recipientCount
+        recipients
+        status
+        trigger
+        error
+        statsJson
+        createdAt
+        updatedAt
+        __typename
+      }
+      nextToken
+      __typename
+    }
+  }
+`;
 export const purchasesByEmail = /* GraphQL */ `
   query PurchasesByEmail(
     $email: String!
@@ -9823,6 +11478,432 @@ export const searchLogsByTimestampAndId = /* GraphQL */ `
         rating_comment
         rating_timestamp
         helpful
+        createdAt
+        updatedAt
+        __typename
+      }
+      nextToken
+      __typename
+    }
+  }
+`;
+export const spsInterestsByEmail = /* GraphQL */ `
+  query SpsInterestsByEmail(
+    $email: String!
+    $sortDirection: ModelSortDirection
+    $filter: ModelSpsInterestFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    spsInterestsByEmail(
+      email: $email
+      sortDirection: $sortDirection
+      filter: $filter
+      limit: $limit
+      nextToken: $nextToken
+    ) {
+      items {
+        id
+        name
+        email
+        company
+        interest
+        createdAt
+        updatedAt
+        __typename
+      }
+      nextToken
+      __typename
+    }
+  }
+`;
+export const educationPartnerLeadsByEmail = /* GraphQL */ `
+  query EducationPartnerLeadsByEmail(
+    $email: String!
+    $sortDirection: ModelSortDirection
+    $filter: ModelEducationPartnerLeadFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    educationPartnerLeadsByEmail(
+      email: $email
+      sortDirection: $sortDirection
+      filter: $filter
+      limit: $limit
+      nextToken: $nextToken
+    ) {
+      items {
+        id
+        email
+        page
+        pageTitle
+        createdAt
+        updatedAt
+        __typename
+      }
+      nextToken
+      __typename
+    }
+  }
+`;
+export const enrollmentRequestsByLibrary = /* GraphQL */ `
+  query EnrollmentRequestsByLibrary(
+    $librarySlug: String!
+    $sortDirection: ModelSortDirection
+    $filter: ModelLibraryEnrollmentRequestFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    enrollmentRequestsByLibrary(
+      librarySlug: $librarySlug
+      sortDirection: $sortDirection
+      filter: $filter
+      limit: $limit
+      nextToken: $nextToken
+    ) {
+      items {
+        id
+        librarySlug
+        status
+        requesterUserID
+        requesterEmail
+        requesterName
+        salesLeaderUserID
+        salesLeaderEmail
+        salesLeaderName
+        courseId
+        courseName
+        courseImage
+        courseLink
+        thinkificId
+        couponCode
+        decisionToken
+        decidedAt
+        decidedByEmail
+        declineReason
+        thinkificEnrollmentId
+        page
+        createdAt
+        updatedAt
+        __typename
+      }
+      nextToken
+      __typename
+    }
+  }
+`;
+export const enrollmentRequestsByRequesterUser = /* GraphQL */ `
+  query EnrollmentRequestsByRequesterUser(
+    $requesterUserID: ID!
+    $sortDirection: ModelSortDirection
+    $filter: ModelLibraryEnrollmentRequestFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    enrollmentRequestsByRequesterUser(
+      requesterUserID: $requesterUserID
+      sortDirection: $sortDirection
+      filter: $filter
+      limit: $limit
+      nextToken: $nextToken
+    ) {
+      items {
+        id
+        librarySlug
+        status
+        requesterUserID
+        requesterEmail
+        requesterName
+        salesLeaderUserID
+        salesLeaderEmail
+        salesLeaderName
+        courseId
+        courseName
+        courseImage
+        courseLink
+        thinkificId
+        couponCode
+        decisionToken
+        decidedAt
+        decidedByEmail
+        declineReason
+        thinkificEnrollmentId
+        page
+        createdAt
+        updatedAt
+        __typename
+      }
+      nextToken
+      __typename
+    }
+  }
+`;
+export const enrollmentRequestsByRequesterEmail = /* GraphQL */ `
+  query EnrollmentRequestsByRequesterEmail(
+    $requesterEmail: String!
+    $sortDirection: ModelSortDirection
+    $filter: ModelLibraryEnrollmentRequestFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    enrollmentRequestsByRequesterEmail(
+      requesterEmail: $requesterEmail
+      sortDirection: $sortDirection
+      filter: $filter
+      limit: $limit
+      nextToken: $nextToken
+    ) {
+      items {
+        id
+        librarySlug
+        status
+        requesterUserID
+        requesterEmail
+        requesterName
+        salesLeaderUserID
+        salesLeaderEmail
+        salesLeaderName
+        courseId
+        courseName
+        courseImage
+        courseLink
+        thinkificId
+        couponCode
+        decisionToken
+        decidedAt
+        decidedByEmail
+        declineReason
+        thinkificEnrollmentId
+        page
+        createdAt
+        updatedAt
+        __typename
+      }
+      nextToken
+      __typename
+    }
+  }
+`;
+export const enrollmentRequestsBySalesLeaderUser = /* GraphQL */ `
+  query EnrollmentRequestsBySalesLeaderUser(
+    $salesLeaderUserID: ID!
+    $sortDirection: ModelSortDirection
+    $filter: ModelLibraryEnrollmentRequestFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    enrollmentRequestsBySalesLeaderUser(
+      salesLeaderUserID: $salesLeaderUserID
+      sortDirection: $sortDirection
+      filter: $filter
+      limit: $limit
+      nextToken: $nextToken
+    ) {
+      items {
+        id
+        librarySlug
+        status
+        requesterUserID
+        requesterEmail
+        requesterName
+        salesLeaderUserID
+        salesLeaderEmail
+        salesLeaderName
+        courseId
+        courseName
+        courseImage
+        courseLink
+        thinkificId
+        couponCode
+        decisionToken
+        decidedAt
+        decidedByEmail
+        declineReason
+        thinkificEnrollmentId
+        page
+        createdAt
+        updatedAt
+        __typename
+      }
+      nextToken
+      __typename
+    }
+  }
+`;
+export const enrollmentRequestsBySalesLeader = /* GraphQL */ `
+  query EnrollmentRequestsBySalesLeader(
+    $salesLeaderEmail: String!
+    $sortDirection: ModelSortDirection
+    $filter: ModelLibraryEnrollmentRequestFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    enrollmentRequestsBySalesLeader(
+      salesLeaderEmail: $salesLeaderEmail
+      sortDirection: $sortDirection
+      filter: $filter
+      limit: $limit
+      nextToken: $nextToken
+    ) {
+      items {
+        id
+        librarySlug
+        status
+        requesterUserID
+        requesterEmail
+        requesterName
+        salesLeaderUserID
+        salesLeaderEmail
+        salesLeaderName
+        courseId
+        courseName
+        courseImage
+        courseLink
+        thinkificId
+        couponCode
+        decisionToken
+        decidedAt
+        decidedByEmail
+        declineReason
+        thinkificEnrollmentId
+        page
+        createdAt
+        updatedAt
+        __typename
+      }
+      nextToken
+      __typename
+    }
+  }
+`;
+export const enrollmentRequestsByDecisionToken = /* GraphQL */ `
+  query EnrollmentRequestsByDecisionToken(
+    $decisionToken: String!
+    $sortDirection: ModelSortDirection
+    $filter: ModelLibraryEnrollmentRequestFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    enrollmentRequestsByDecisionToken(
+      decisionToken: $decisionToken
+      sortDirection: $sortDirection
+      filter: $filter
+      limit: $limit
+      nextToken: $nextToken
+    ) {
+      items {
+        id
+        librarySlug
+        status
+        requesterUserID
+        requesterEmail
+        requesterName
+        salesLeaderUserID
+        salesLeaderEmail
+        salesLeaderName
+        courseId
+        courseName
+        courseImage
+        courseLink
+        thinkificId
+        couponCode
+        decisionToken
+        decidedAt
+        decidedByEmail
+        declineReason
+        thinkificEnrollmentId
+        page
+        createdAt
+        updatedAt
+        __typename
+      }
+      nextToken
+      __typename
+    }
+  }
+`;
+export const ndSalesLeadersByEmail = /* GraphQL */ `
+  query NdSalesLeadersByEmail(
+    $email: String!
+    $sortDirection: ModelSortDirection
+    $filter: ModelNetworkDistributionSalesLeaderFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    ndSalesLeadersByEmail(
+      email: $email
+      sortDirection: $sortDirection
+      filter: $filter
+      limit: $limit
+      nextToken: $nextToken
+    ) {
+      items {
+        id
+        email
+        name
+        active
+        createdAt
+        updatedAt
+        __typename
+      }
+      nextToken
+      __typename
+    }
+  }
+`;
+export const ndLearnersByEmail = /* GraphQL */ `
+  query NdLearnersByEmail(
+    $email: String!
+    $sortDirection: ModelSortDirection
+    $filter: ModelNetworkDistributionLearnerFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    ndLearnersByEmail(
+      email: $email
+      sortDirection: $sortDirection
+      filter: $filter
+      limit: $limit
+      nextToken: $nextToken
+    ) {
+      items {
+        id
+        email
+        salesLeaderEmail
+        name
+        firstApprovedAt
+        status
+        createdAt
+        updatedAt
+        __typename
+      }
+      nextToken
+      __typename
+    }
+  }
+`;
+export const ndLearnersBySalesLeader = /* GraphQL */ `
+  query NdLearnersBySalesLeader(
+    $salesLeaderEmail: String!
+    $sortDirection: ModelSortDirection
+    $filter: ModelNetworkDistributionLearnerFilterInput
+    $limit: Int
+    $nextToken: String
+  ) {
+    ndLearnersBySalesLeader(
+      salesLeaderEmail: $salesLeaderEmail
+      sortDirection: $sortDirection
+      filter: $filter
+      limit: $limit
+      nextToken: $nextToken
+    ) {
+      items {
+        id
+        email
+        salesLeaderEmail
+        name
+        firstApprovedAt
+        status
         createdAt
         updatedAt
         __typename

@@ -1525,6 +1525,7 @@ export const createUser = /* GraphQL */ `
         contactConsent
         status
         videoLink
+        manualVideoLink
         createdOn
         updatedOn
         icpfCmpmFormUserId
@@ -1781,6 +1782,7 @@ export const updateUser = /* GraphQL */ `
         contactConsent
         status
         videoLink
+        manualVideoLink
         createdOn
         updatedOn
         icpfCmpmFormUserId
@@ -2037,6 +2039,7 @@ export const deleteUser = /* GraphQL */ `
         contactConsent
         status
         videoLink
+        manualVideoLink
         createdOn
         updatedOn
         icpfCmpmFormUserId
@@ -2928,6 +2931,9 @@ export const createLearningPathCourse = /* GraphQL */ `
         subscriptionPrice
         stripeLink
         callout
+        thirtyDay
+        ninetyDay
+        threeSixtyDay
         createdAt
         updatedAt
         customerLibaryClientCoursesId
@@ -2996,6 +3002,9 @@ export const updateLearningPathCourse = /* GraphQL */ `
         subscriptionPrice
         stripeLink
         callout
+        thirtyDay
+        ninetyDay
+        threeSixtyDay
         createdAt
         updatedAt
         customerLibaryClientCoursesId
@@ -3064,6 +3073,9 @@ export const deleteLearningPathCourse = /* GraphQL */ `
         subscriptionPrice
         stripeLink
         callout
+        thirtyDay
+        ninetyDay
+        threeSixtyDay
         createdAt
         updatedAt
         customerLibaryClientCoursesId
@@ -3694,6 +3706,7 @@ export const createIcpfCmpmForm = /* GraphQL */ `
       contactConsent
       status
       videoLink
+      manualVideoLink
       createdOn
       updatedOn
       icpfCmpmFormUserId
@@ -3791,6 +3804,7 @@ export const updateIcpfCmpmForm = /* GraphQL */ `
       contactConsent
       status
       videoLink
+      manualVideoLink
       createdOn
       updatedOn
       icpfCmpmFormUserId
@@ -3888,6 +3902,7 @@ export const deleteIcpfCmpmForm = /* GraphQL */ `
       contactConsent
       status
       videoLink
+      manualVideoLink
       createdOn
       updatedOn
       icpfCmpmFormUserId
@@ -4859,6 +4874,9 @@ export const createLMSCourse = /* GraphQL */ `
         nextToken
         __typename
       }
+      thirtyDay
+      ninetyDay
+      threeSixtyDay
       createdAt
       updatedAt
       customerLibaryClientCoursesId
@@ -4946,6 +4964,9 @@ export const updateLMSCourse = /* GraphQL */ `
         nextToken
         __typename
       }
+      thirtyDay
+      ninetyDay
+      threeSixtyDay
       createdAt
       updatedAt
       customerLibaryClientCoursesId
@@ -5033,6 +5054,9 @@ export const deleteLMSCourse = /* GraphQL */ `
         nextToken
         __typename
       }
+      thirtyDay
+      ninetyDay
+      threeSixtyDay
       createdAt
       updatedAt
       customerLibaryClientCoursesId
@@ -5996,6 +6020,12 @@ export const createCustomerLibary = /* GraphQL */ `
       availableCodes
       usedCodes
       promotionId
+      thinkificGroupId
+      thinkificGroupName
+      reportLayouts {
+        nextToken
+        __typename
+      }
       createdAt
       updatedAt
       __typename
@@ -6039,6 +6069,12 @@ export const updateCustomerLibary = /* GraphQL */ `
       availableCodes
       usedCodes
       promotionId
+      thinkificGroupId
+      thinkificGroupName
+      reportLayouts {
+        nextToken
+        __typename
+      }
       createdAt
       updatedAt
       __typename
@@ -6082,6 +6118,141 @@ export const deleteCustomerLibary = /* GraphQL */ `
       availableCodes
       usedCodes
       promotionId
+      thinkificGroupId
+      thinkificGroupName
+      reportLayouts {
+        nextToken
+        __typename
+      }
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const createReportLayout = /* GraphQL */ `
+  mutation CreateReportLayout(
+    $input: CreateReportLayoutInput!
+    $condition: ModelReportLayoutConditionInput
+  ) {
+    createReportLayout(input: $input, condition: $condition) {
+      id
+      libraryId
+      library {
+        id
+        displayName
+        slug
+        description
+        link
+        logo
+        email
+        primaryColor
+        highlightColor
+        pdf
+        slide
+        video
+        addOns
+        backgroundImage
+        code
+        status
+        availableCodes
+        usedCodes
+        promotionId
+        thinkificGroupId
+        thinkificGroupName
+        createdAt
+        updatedAt
+        __typename
+      }
+      name
+      title
+      modules
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const updateReportLayout = /* GraphQL */ `
+  mutation UpdateReportLayout(
+    $input: UpdateReportLayoutInput!
+    $condition: ModelReportLayoutConditionInput
+  ) {
+    updateReportLayout(input: $input, condition: $condition) {
+      id
+      libraryId
+      library {
+        id
+        displayName
+        slug
+        description
+        link
+        logo
+        email
+        primaryColor
+        highlightColor
+        pdf
+        slide
+        video
+        addOns
+        backgroundImage
+        code
+        status
+        availableCodes
+        usedCodes
+        promotionId
+        thinkificGroupId
+        thinkificGroupName
+        createdAt
+        updatedAt
+        __typename
+      }
+      name
+      title
+      modules
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const deleteReportLayout = /* GraphQL */ `
+  mutation DeleteReportLayout(
+    $input: DeleteReportLayoutInput!
+    $condition: ModelReportLayoutConditionInput
+  ) {
+    deleteReportLayout(input: $input, condition: $condition) {
+      id
+      libraryId
+      library {
+        id
+        displayName
+        slug
+        description
+        link
+        logo
+        email
+        primaryColor
+        highlightColor
+        pdf
+        slide
+        video
+        addOns
+        backgroundImage
+        code
+        status
+        availableCodes
+        usedCodes
+        promotionId
+        thinkificGroupId
+        thinkificGroupName
+        createdAt
+        updatedAt
+        __typename
+      }
+      name
+      title
+      modules
       createdAt
       updatedAt
       __typename
@@ -6689,6 +6860,8 @@ export const createAbTestExposure = /* GraphQL */ `
       source
       referrer
       ipAddress
+      city
+      region
       country
       createdAt
       updatedAt
@@ -6718,6 +6891,8 @@ export const updateAbTestExposure = /* GraphQL */ `
       source
       referrer
       ipAddress
+      city
+      region
       country
       createdAt
       updatedAt
@@ -6747,6 +6922,8 @@ export const deleteAbTestExposure = /* GraphQL */ `
       source
       referrer
       ipAddress
+      city
+      region
       country
       createdAt
       updatedAt
@@ -6762,10 +6939,13 @@ export const createAbTestEvent = /* GraphQL */ `
     createAbTestEvent(input: $input, condition: $condition) {
       id
       experimentKey
+      experimentDay
       eventName
       variant
       sessionId
+      visitorId
       userID
+      email
       pagePath
       deviceType
       acquisitionChannel
@@ -6789,9 +6969,13 @@ export const createAbTestEvent = /* GraphQL */ `
       grossAmountCents
       netAmountCents
       discountAmountCents
+      matchedIntentId
+      attributionMethod
       source
       reason
       ipAddress
+      city
+      region
       country
       metadata
       createdAt
@@ -6808,10 +6992,13 @@ export const updateAbTestEvent = /* GraphQL */ `
     updateAbTestEvent(input: $input, condition: $condition) {
       id
       experimentKey
+      experimentDay
       eventName
       variant
       sessionId
+      visitorId
       userID
+      email
       pagePath
       deviceType
       acquisitionChannel
@@ -6835,9 +7022,13 @@ export const updateAbTestEvent = /* GraphQL */ `
       grossAmountCents
       netAmountCents
       discountAmountCents
+      matchedIntentId
+      attributionMethod
       source
       reason
       ipAddress
+      city
+      region
       country
       metadata
       createdAt
@@ -6854,10 +7045,13 @@ export const deleteAbTestEvent = /* GraphQL */ `
     deleteAbTestEvent(input: $input, condition: $condition) {
       id
       experimentKey
+      experimentDay
       eventName
       variant
       sessionId
+      visitorId
       userID
+      email
       pagePath
       deviceType
       acquisitionChannel
@@ -6881,11 +7075,105 @@ export const deleteAbTestEvent = /* GraphQL */ `
       grossAmountCents
       netAmountCents
       discountAmountCents
+      matchedIntentId
+      attributionMethod
       source
       reason
       ipAddress
+      city
+      region
       country
       metadata
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const createAbWebhookReceipt = /* GraphQL */ `
+  mutation CreateAbWebhookReceipt(
+    $input: CreateAbWebhookReceiptInput!
+    $condition: ModelAbWebhookReceiptConditionInput
+  ) {
+    createAbWebhookReceipt(input: $input, condition: $condition) {
+      id
+      source
+      receiptDay
+      experimentKey
+      decision
+      reason
+      action
+      status
+      thinkificOrderId
+      externalOrderId
+      orderNumber
+      email
+      variant
+      matchedSessionId
+      matchedIntentId
+      attributionMethod
+      abEventId
+      rawPayload
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const updateAbWebhookReceipt = /* GraphQL */ `
+  mutation UpdateAbWebhookReceipt(
+    $input: UpdateAbWebhookReceiptInput!
+    $condition: ModelAbWebhookReceiptConditionInput
+  ) {
+    updateAbWebhookReceipt(input: $input, condition: $condition) {
+      id
+      source
+      receiptDay
+      experimentKey
+      decision
+      reason
+      action
+      status
+      thinkificOrderId
+      externalOrderId
+      orderNumber
+      email
+      variant
+      matchedSessionId
+      matchedIntentId
+      attributionMethod
+      abEventId
+      rawPayload
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const deleteAbWebhookReceipt = /* GraphQL */ `
+  mutation DeleteAbWebhookReceipt(
+    $input: DeleteAbWebhookReceiptInput!
+    $condition: ModelAbWebhookReceiptConditionInput
+  ) {
+    deleteAbWebhookReceipt(input: $input, condition: $condition) {
+      id
+      source
+      receiptDay
+      experimentKey
+      decision
+      reason
+      action
+      status
+      thinkificOrderId
+      externalOrderId
+      orderNumber
+      email
+      variant
+      matchedSessionId
+      matchedIntentId
+      attributionMethod
+      abEventId
+      rawPayload
       createdAt
       updatedAt
       __typename
@@ -8398,6 +8686,705 @@ export const deleteEmailSubscription = /* GraphQL */ `
     }
   }
 `;
+export const createEmailTemplate = /* GraphQL */ `
+  mutation CreateEmailTemplate(
+    $input: CreateEmailTemplateInput!
+    $condition: ModelEmailTemplateConditionInput
+  ) {
+    createEmailTemplate(input: $input, condition: $condition) {
+      id
+      slug
+      name
+      subject
+      preheader
+      description
+      status
+      documentJson
+      updatedBy
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const updateEmailTemplate = /* GraphQL */ `
+  mutation UpdateEmailTemplate(
+    $input: UpdateEmailTemplateInput!
+    $condition: ModelEmailTemplateConditionInput
+  ) {
+    updateEmailTemplate(input: $input, condition: $condition) {
+      id
+      slug
+      name
+      subject
+      preheader
+      description
+      status
+      documentJson
+      updatedBy
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const deleteEmailTemplate = /* GraphQL */ `
+  mutation DeleteEmailTemplate(
+    $input: DeleteEmailTemplateInput!
+    $condition: ModelEmailTemplateConditionInput
+  ) {
+    deleteEmailTemplate(input: $input, condition: $condition) {
+      id
+      slug
+      name
+      subject
+      preheader
+      description
+      status
+      documentJson
+      updatedBy
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const createEmailContact = /* GraphQL */ `
+  mutation CreateEmailContact(
+    $input: CreateEmailContactInput!
+    $condition: ModelEmailContactConditionInput
+  ) {
+    createEmailContact(input: $input, condition: $condition) {
+      id
+      email
+      firstName
+      lastName
+      searchText
+      status
+      source
+      thinkificUserId
+      thinkificMatched
+      enrollmentCount
+      hasPurchase
+      acContactId
+      unsubscribedAt
+      archivedAt
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const updateEmailContact = /* GraphQL */ `
+  mutation UpdateEmailContact(
+    $input: UpdateEmailContactInput!
+    $condition: ModelEmailContactConditionInput
+  ) {
+    updateEmailContact(input: $input, condition: $condition) {
+      id
+      email
+      firstName
+      lastName
+      searchText
+      status
+      source
+      thinkificUserId
+      thinkificMatched
+      enrollmentCount
+      hasPurchase
+      acContactId
+      unsubscribedAt
+      archivedAt
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const deleteEmailContact = /* GraphQL */ `
+  mutation DeleteEmailContact(
+    $input: DeleteEmailContactInput!
+    $condition: ModelEmailContactConditionInput
+  ) {
+    deleteEmailContact(input: $input, condition: $condition) {
+      id
+      email
+      firstName
+      lastName
+      searchText
+      status
+      source
+      thinkificUserId
+      thinkificMatched
+      enrollmentCount
+      hasPurchase
+      acContactId
+      unsubscribedAt
+      archivedAt
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const createEmailList = /* GraphQL */ `
+  mutation CreateEmailList(
+    $input: CreateEmailListInput!
+    $condition: ModelEmailListConditionInput
+  ) {
+    createEmailList(input: $input, condition: $condition) {
+      id
+      name
+      description
+      status
+      memberCount
+      archivedAt
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const updateEmailList = /* GraphQL */ `
+  mutation UpdateEmailList(
+    $input: UpdateEmailListInput!
+    $condition: ModelEmailListConditionInput
+  ) {
+    updateEmailList(input: $input, condition: $condition) {
+      id
+      name
+      description
+      status
+      memberCount
+      archivedAt
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const deleteEmailList = /* GraphQL */ `
+  mutation DeleteEmailList(
+    $input: DeleteEmailListInput!
+    $condition: ModelEmailListConditionInput
+  ) {
+    deleteEmailList(input: $input, condition: $condition) {
+      id
+      name
+      description
+      status
+      memberCount
+      archivedAt
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const createEmailListMembership = /* GraphQL */ `
+  mutation CreateEmailListMembership(
+    $input: CreateEmailListMembershipInput!
+    $condition: ModelEmailListMembershipConditionInput
+  ) {
+    createEmailListMembership(input: $input, condition: $condition) {
+      id
+      listId
+      contactId
+      email
+      status
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const updateEmailListMembership = /* GraphQL */ `
+  mutation UpdateEmailListMembership(
+    $input: UpdateEmailListMembershipInput!
+    $condition: ModelEmailListMembershipConditionInput
+  ) {
+    updateEmailListMembership(input: $input, condition: $condition) {
+      id
+      listId
+      contactId
+      email
+      status
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const deleteEmailListMembership = /* GraphQL */ `
+  mutation DeleteEmailListMembership(
+    $input: DeleteEmailListMembershipInput!
+    $condition: ModelEmailListMembershipConditionInput
+  ) {
+    deleteEmailListMembership(input: $input, condition: $condition) {
+      id
+      listId
+      contactId
+      email
+      status
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const createEmailCampaign = /* GraphQL */ `
+  mutation CreateEmailCampaign(
+    $input: CreateEmailCampaignInput!
+    $condition: ModelEmailCampaignConditionInput
+  ) {
+    createEmailCampaign(input: $input, condition: $condition) {
+      id
+      name
+      subject
+      preheader
+      fromName
+      fromEmail
+      templateId
+      listId
+      status
+      scheduledAt
+      htmlSnapshot
+      recipientCount
+      sentCount
+      failedCount
+      openCount
+      clickCount
+      unsubCount
+      sentAt
+      error
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const updateEmailCampaign = /* GraphQL */ `
+  mutation UpdateEmailCampaign(
+    $input: UpdateEmailCampaignInput!
+    $condition: ModelEmailCampaignConditionInput
+  ) {
+    updateEmailCampaign(input: $input, condition: $condition) {
+      id
+      name
+      subject
+      preheader
+      fromName
+      fromEmail
+      templateId
+      listId
+      status
+      scheduledAt
+      htmlSnapshot
+      recipientCount
+      sentCount
+      failedCount
+      openCount
+      clickCount
+      unsubCount
+      sentAt
+      error
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const deleteEmailCampaign = /* GraphQL */ `
+  mutation DeleteEmailCampaign(
+    $input: DeleteEmailCampaignInput!
+    $condition: ModelEmailCampaignConditionInput
+  ) {
+    deleteEmailCampaign(input: $input, condition: $condition) {
+      id
+      name
+      subject
+      preheader
+      fromName
+      fromEmail
+      templateId
+      listId
+      status
+      scheduledAt
+      htmlSnapshot
+      recipientCount
+      sentCount
+      failedCount
+      openCount
+      clickCount
+      unsubCount
+      sentAt
+      error
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const createEmailSend = /* GraphQL */ `
+  mutation CreateEmailSend(
+    $input: CreateEmailSendInput!
+    $condition: ModelEmailSendConditionInput
+  ) {
+    createEmailSend(input: $input, condition: $condition) {
+      id
+      campaignId
+      automationRunId
+      contactId
+      email
+      status
+      sesMessageId
+      openedAt
+      openCount
+      clickedAt
+      clickCount
+      lastClickedUrl
+      skipReason
+      error
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const updateEmailSend = /* GraphQL */ `
+  mutation UpdateEmailSend(
+    $input: UpdateEmailSendInput!
+    $condition: ModelEmailSendConditionInput
+  ) {
+    updateEmailSend(input: $input, condition: $condition) {
+      id
+      campaignId
+      automationRunId
+      contactId
+      email
+      status
+      sesMessageId
+      openedAt
+      openCount
+      clickedAt
+      clickCount
+      lastClickedUrl
+      skipReason
+      error
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const deleteEmailSend = /* GraphQL */ `
+  mutation DeleteEmailSend(
+    $input: DeleteEmailSendInput!
+    $condition: ModelEmailSendConditionInput
+  ) {
+    deleteEmailSend(input: $input, condition: $condition) {
+      id
+      campaignId
+      automationRunId
+      contactId
+      email
+      status
+      sesMessageId
+      openedAt
+      openCount
+      clickedAt
+      clickCount
+      lastClickedUrl
+      skipReason
+      error
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const createEmailAutomation = /* GraphQL */ `
+  mutation CreateEmailAutomation(
+    $input: CreateEmailAutomationInput!
+    $condition: ModelEmailAutomationConditionInput
+  ) {
+    createEmailAutomation(input: $input, condition: $condition) {
+      id
+      key
+      name
+      status
+      sendDay
+      sendTime
+      subject
+      preheader
+      fromName
+      fromEmail
+      templateId
+      audience
+      lastRunOn
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const updateEmailAutomation = /* GraphQL */ `
+  mutation UpdateEmailAutomation(
+    $input: UpdateEmailAutomationInput!
+    $condition: ModelEmailAutomationConditionInput
+  ) {
+    updateEmailAutomation(input: $input, condition: $condition) {
+      id
+      key
+      name
+      status
+      sendDay
+      sendTime
+      subject
+      preheader
+      fromName
+      fromEmail
+      templateId
+      audience
+      lastRunOn
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const deleteEmailAutomation = /* GraphQL */ `
+  mutation DeleteEmailAutomation(
+    $input: DeleteEmailAutomationInput!
+    $condition: ModelEmailAutomationConditionInput
+  ) {
+    deleteEmailAutomation(input: $input, condition: $condition) {
+      id
+      key
+      name
+      status
+      sendDay
+      sendTime
+      subject
+      preheader
+      fromName
+      fromEmail
+      templateId
+      audience
+      lastRunOn
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const createEmailAutomationRun = /* GraphQL */ `
+  mutation CreateEmailAutomationRun(
+    $input: CreateEmailAutomationRunInput!
+    $condition: ModelEmailAutomationRunConditionInput
+  ) {
+    createEmailAutomationRun(input: $input, condition: $condition) {
+      id
+      automationId
+      runOn
+      status
+      subject
+      recipientCount
+      sentCount
+      failedCount
+      skippedCount
+      openCount
+      clickCount
+      unsubCount
+      startedAt
+      finishedAt
+      error
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const updateEmailAutomationRun = /* GraphQL */ `
+  mutation UpdateEmailAutomationRun(
+    $input: UpdateEmailAutomationRunInput!
+    $condition: ModelEmailAutomationRunConditionInput
+  ) {
+    updateEmailAutomationRun(input: $input, condition: $condition) {
+      id
+      automationId
+      runOn
+      status
+      subject
+      recipientCount
+      sentCount
+      failedCount
+      skippedCount
+      openCount
+      clickCount
+      unsubCount
+      startedAt
+      finishedAt
+      error
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const deleteEmailAutomationRun = /* GraphQL */ `
+  mutation DeleteEmailAutomationRun(
+    $input: DeleteEmailAutomationRunInput!
+    $condition: ModelEmailAutomationRunConditionInput
+  ) {
+    deleteEmailAutomationRun(input: $input, condition: $condition) {
+      id
+      automationId
+      runOn
+      status
+      subject
+      recipientCount
+      sentCount
+      failedCount
+      skippedCount
+      openCount
+      clickCount
+      unsubCount
+      startedAt
+      finishedAt
+      error
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const createInternalDigestRecipient = /* GraphQL */ `
+  mutation CreateInternalDigestRecipient(
+    $input: CreateInternalDigestRecipientInput!
+    $condition: ModelInternalDigestRecipientConditionInput
+  ) {
+    createInternalDigestRecipient(input: $input, condition: $condition) {
+      id
+      email
+      name
+      active
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const updateInternalDigestRecipient = /* GraphQL */ `
+  mutation UpdateInternalDigestRecipient(
+    $input: UpdateInternalDigestRecipientInput!
+    $condition: ModelInternalDigestRecipientConditionInput
+  ) {
+    updateInternalDigestRecipient(input: $input, condition: $condition) {
+      id
+      email
+      name
+      active
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const deleteInternalDigestRecipient = /* GraphQL */ `
+  mutation DeleteInternalDigestRecipient(
+    $input: DeleteInternalDigestRecipientInput!
+    $condition: ModelInternalDigestRecipientConditionInput
+  ) {
+    deleteInternalDigestRecipient(input: $input, condition: $condition) {
+      id
+      email
+      name
+      active
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const createInternalDigestSend = /* GraphQL */ `
+  mutation CreateInternalDigestSend(
+    $input: CreateInternalDigestSendInput!
+    $condition: ModelInternalDigestSendConditionInput
+  ) {
+    createInternalDigestSend(input: $input, condition: $condition) {
+      id
+      kind
+      sentAt
+      subject
+      html
+      text
+      periodStart
+      periodEnd
+      recipientCount
+      recipients
+      status
+      trigger
+      error
+      statsJson
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const updateInternalDigestSend = /* GraphQL */ `
+  mutation UpdateInternalDigestSend(
+    $input: UpdateInternalDigestSendInput!
+    $condition: ModelInternalDigestSendConditionInput
+  ) {
+    updateInternalDigestSend(input: $input, condition: $condition) {
+      id
+      kind
+      sentAt
+      subject
+      html
+      text
+      periodStart
+      periodEnd
+      recipientCount
+      recipients
+      status
+      trigger
+      error
+      statsJson
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const deleteInternalDigestSend = /* GraphQL */ `
+  mutation DeleteInternalDigestSend(
+    $input: DeleteInternalDigestSendInput!
+    $condition: ModelInternalDigestSendConditionInput
+  ) {
+    deleteInternalDigestSend(input: $input, condition: $condition) {
+      id
+      kind
+      sentAt
+      subject
+      html
+      text
+      periodStart
+      periodEnd
+      recipientCount
+      recipients
+      status
+      trigger
+      error
+      statsJson
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
 export const createImageObject = /* GraphQL */ `
   mutation CreateImageObject(
     $input: CreateImageObjectInput!
@@ -8864,6 +9851,9 @@ export const createCourseReview = /* GraphQL */ `
         subscriptionPrice
         stripeLink
         callout
+        thirtyDay
+        ninetyDay
+        threeSixtyDay
         createdAt
         updatedAt
         customerLibaryClientCoursesId
@@ -8962,6 +9952,9 @@ export const updateCourseReview = /* GraphQL */ `
         subscriptionPrice
         stripeLink
         callout
+        thirtyDay
+        ninetyDay
+        threeSixtyDay
         createdAt
         updatedAt
         customerLibaryClientCoursesId
@@ -9060,6 +10053,9 @@ export const deleteCourseReview = /* GraphQL */ `
         subscriptionPrice
         stripeLink
         callout
+        thirtyDay
+        ninetyDay
+        threeSixtyDay
         createdAt
         updatedAt
         customerLibaryClientCoursesId
@@ -9856,6 +10852,306 @@ export const deleteCourseOutlineRequest = /* GraphQL */ `
       country
       device
       page
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const createSpsInterest = /* GraphQL */ `
+  mutation CreateSpsInterest(
+    $input: CreateSpsInterestInput!
+    $condition: ModelSpsInterestConditionInput
+  ) {
+    createSpsInterest(input: $input, condition: $condition) {
+      id
+      name
+      email
+      company
+      interest
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const updateSpsInterest = /* GraphQL */ `
+  mutation UpdateSpsInterest(
+    $input: UpdateSpsInterestInput!
+    $condition: ModelSpsInterestConditionInput
+  ) {
+    updateSpsInterest(input: $input, condition: $condition) {
+      id
+      name
+      email
+      company
+      interest
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const deleteSpsInterest = /* GraphQL */ `
+  mutation DeleteSpsInterest(
+    $input: DeleteSpsInterestInput!
+    $condition: ModelSpsInterestConditionInput
+  ) {
+    deleteSpsInterest(input: $input, condition: $condition) {
+      id
+      name
+      email
+      company
+      interest
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const createEducationPartnerLead = /* GraphQL */ `
+  mutation CreateEducationPartnerLead(
+    $input: CreateEducationPartnerLeadInput!
+    $condition: ModelEducationPartnerLeadConditionInput
+  ) {
+    createEducationPartnerLead(input: $input, condition: $condition) {
+      id
+      email
+      page
+      pageTitle
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const updateEducationPartnerLead = /* GraphQL */ `
+  mutation UpdateEducationPartnerLead(
+    $input: UpdateEducationPartnerLeadInput!
+    $condition: ModelEducationPartnerLeadConditionInput
+  ) {
+    updateEducationPartnerLead(input: $input, condition: $condition) {
+      id
+      email
+      page
+      pageTitle
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const deleteEducationPartnerLead = /* GraphQL */ `
+  mutation DeleteEducationPartnerLead(
+    $input: DeleteEducationPartnerLeadInput!
+    $condition: ModelEducationPartnerLeadConditionInput
+  ) {
+    deleteEducationPartnerLead(input: $input, condition: $condition) {
+      id
+      email
+      page
+      pageTitle
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const createLibraryEnrollmentRequest = /* GraphQL */ `
+  mutation CreateLibraryEnrollmentRequest(
+    $input: CreateLibraryEnrollmentRequestInput!
+    $condition: ModelLibraryEnrollmentRequestConditionInput
+  ) {
+    createLibraryEnrollmentRequest(input: $input, condition: $condition) {
+      id
+      librarySlug
+      status
+      requesterUserID
+      requesterEmail
+      requesterName
+      salesLeaderUserID
+      salesLeaderEmail
+      salesLeaderName
+      courseId
+      courseName
+      courseImage
+      courseLink
+      thinkificId
+      couponCode
+      decisionToken
+      decidedAt
+      decidedByEmail
+      declineReason
+      thinkificEnrollmentId
+      page
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const updateLibraryEnrollmentRequest = /* GraphQL */ `
+  mutation UpdateLibraryEnrollmentRequest(
+    $input: UpdateLibraryEnrollmentRequestInput!
+    $condition: ModelLibraryEnrollmentRequestConditionInput
+  ) {
+    updateLibraryEnrollmentRequest(input: $input, condition: $condition) {
+      id
+      librarySlug
+      status
+      requesterUserID
+      requesterEmail
+      requesterName
+      salesLeaderUserID
+      salesLeaderEmail
+      salesLeaderName
+      courseId
+      courseName
+      courseImage
+      courseLink
+      thinkificId
+      couponCode
+      decisionToken
+      decidedAt
+      decidedByEmail
+      declineReason
+      thinkificEnrollmentId
+      page
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const deleteLibraryEnrollmentRequest = /* GraphQL */ `
+  mutation DeleteLibraryEnrollmentRequest(
+    $input: DeleteLibraryEnrollmentRequestInput!
+    $condition: ModelLibraryEnrollmentRequestConditionInput
+  ) {
+    deleteLibraryEnrollmentRequest(input: $input, condition: $condition) {
+      id
+      librarySlug
+      status
+      requesterUserID
+      requesterEmail
+      requesterName
+      salesLeaderUserID
+      salesLeaderEmail
+      salesLeaderName
+      courseId
+      courseName
+      courseImage
+      courseLink
+      thinkificId
+      couponCode
+      decisionToken
+      decidedAt
+      decidedByEmail
+      declineReason
+      thinkificEnrollmentId
+      page
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const createNetworkDistributionSalesLeader = /* GraphQL */ `
+  mutation CreateNetworkDistributionSalesLeader(
+    $input: CreateNetworkDistributionSalesLeaderInput!
+    $condition: ModelNetworkDistributionSalesLeaderConditionInput
+  ) {
+    createNetworkDistributionSalesLeader(input: $input, condition: $condition) {
+      id
+      email
+      name
+      active
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const updateNetworkDistributionSalesLeader = /* GraphQL */ `
+  mutation UpdateNetworkDistributionSalesLeader(
+    $input: UpdateNetworkDistributionSalesLeaderInput!
+    $condition: ModelNetworkDistributionSalesLeaderConditionInput
+  ) {
+    updateNetworkDistributionSalesLeader(input: $input, condition: $condition) {
+      id
+      email
+      name
+      active
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const deleteNetworkDistributionSalesLeader = /* GraphQL */ `
+  mutation DeleteNetworkDistributionSalesLeader(
+    $input: DeleteNetworkDistributionSalesLeaderInput!
+    $condition: ModelNetworkDistributionSalesLeaderConditionInput
+  ) {
+    deleteNetworkDistributionSalesLeader(input: $input, condition: $condition) {
+      id
+      email
+      name
+      active
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const createNetworkDistributionLearner = /* GraphQL */ `
+  mutation CreateNetworkDistributionLearner(
+    $input: CreateNetworkDistributionLearnerInput!
+    $condition: ModelNetworkDistributionLearnerConditionInput
+  ) {
+    createNetworkDistributionLearner(input: $input, condition: $condition) {
+      id
+      email
+      salesLeaderEmail
+      name
+      firstApprovedAt
+      status
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const updateNetworkDistributionLearner = /* GraphQL */ `
+  mutation UpdateNetworkDistributionLearner(
+    $input: UpdateNetworkDistributionLearnerInput!
+    $condition: ModelNetworkDistributionLearnerConditionInput
+  ) {
+    updateNetworkDistributionLearner(input: $input, condition: $condition) {
+      id
+      email
+      salesLeaderEmail
+      name
+      firstApprovedAt
+      status
+      createdAt
+      updatedAt
+      __typename
+    }
+  }
+`;
+export const deleteNetworkDistributionLearner = /* GraphQL */ `
+  mutation DeleteNetworkDistributionLearner(
+    $input: DeleteNetworkDistributionLearnerInput!
+    $condition: ModelNetworkDistributionLearnerConditionInput
+  ) {
+    deleteNetworkDistributionLearner(input: $input, condition: $condition) {
+      id
+      email
+      salesLeaderEmail
+      name
+      firstApprovedAt
+      status
       createdAt
       updatedAt
       __typename
@@ -11774,6 +13070,9 @@ export const createUserWishlist = /* GraphQL */ `
         subscriptionPrice
         stripeLink
         callout
+        thirtyDay
+        ninetyDay
+        threeSixtyDay
         createdAt
         updatedAt
         customerLibaryClientCoursesId
@@ -11868,6 +13167,9 @@ export const updateUserWishlist = /* GraphQL */ `
         subscriptionPrice
         stripeLink
         callout
+        thirtyDay
+        ninetyDay
+        threeSixtyDay
         createdAt
         updatedAt
         customerLibaryClientCoursesId
@@ -11962,6 +13264,9 @@ export const deleteUserWishlist = /* GraphQL */ `
         subscriptionPrice
         stripeLink
         callout
+        thirtyDay
+        ninetyDay
+        threeSixtyDay
         createdAt
         updatedAt
         customerLibaryClientCoursesId
@@ -12032,6 +13337,9 @@ export const createCollectionCourses = /* GraphQL */ `
         subscriptionPrice
         stripeLink
         callout
+        thirtyDay
+        ninetyDay
+        threeSixtyDay
         createdAt
         updatedAt
         customerLibaryClientCoursesId
@@ -12102,6 +13410,9 @@ export const updateCollectionCourses = /* GraphQL */ `
         subscriptionPrice
         stripeLink
         callout
+        thirtyDay
+        ninetyDay
+        threeSixtyDay
         createdAt
         updatedAt
         customerLibaryClientCoursesId
@@ -12172,6 +13483,9 @@ export const deleteCollectionCourses = /* GraphQL */ `
         subscriptionPrice
         stripeLink
         callout
+        thirtyDay
+        ninetyDay
+        threeSixtyDay
         createdAt
         updatedAt
         customerLibaryClientCoursesId
@@ -12233,6 +13547,9 @@ export const createCirriculumCourses = /* GraphQL */ `
         subscriptionPrice
         stripeLink
         callout
+        thirtyDay
+        ninetyDay
+        threeSixtyDay
         createdAt
         updatedAt
         customerLibaryClientCoursesId
@@ -12294,6 +13611,9 @@ export const updateCirriculumCourses = /* GraphQL */ `
         subscriptionPrice
         stripeLink
         callout
+        thirtyDay
+        ninetyDay
+        threeSixtyDay
         createdAt
         updatedAt
         customerLibaryClientCoursesId
@@ -12355,6 +13675,9 @@ export const deleteCirriculumCourses = /* GraphQL */ `
         subscriptionPrice
         stripeLink
         callout
+        thirtyDay
+        ninetyDay
+        threeSixtyDay
         createdAt
         updatedAt
         customerLibaryClientCoursesId
@@ -12406,6 +13729,9 @@ export const createCourseLessons = /* GraphQL */ `
         subscriptionPrice
         stripeLink
         callout
+        thirtyDay
+        ninetyDay
+        threeSixtyDay
         createdAt
         updatedAt
         customerLibaryClientCoursesId
@@ -12470,6 +13796,9 @@ export const updateCourseLessons = /* GraphQL */ `
         subscriptionPrice
         stripeLink
         callout
+        thirtyDay
+        ninetyDay
+        threeSixtyDay
         createdAt
         updatedAt
         customerLibaryClientCoursesId
@@ -12534,6 +13863,9 @@ export const deleteCourseLessons = /* GraphQL */ `
         subscriptionPrice
         stripeLink
         callout
+        thirtyDay
+        ninetyDay
+        threeSixtyDay
         createdAt
         updatedAt
         customerLibaryClientCoursesId
@@ -12598,6 +13930,9 @@ export const createCourseInstructors = /* GraphQL */ `
         subscriptionPrice
         stripeLink
         callout
+        thirtyDay
+        ninetyDay
+        threeSixtyDay
         createdAt
         updatedAt
         customerLibaryClientCoursesId
@@ -12662,6 +13997,9 @@ export const updateCourseInstructors = /* GraphQL */ `
         subscriptionPrice
         stripeLink
         callout
+        thirtyDay
+        ninetyDay
+        threeSixtyDay
         createdAt
         updatedAt
         customerLibaryClientCoursesId
@@ -12726,6 +14064,9 @@ export const deleteCourseInstructors = /* GraphQL */ `
         subscriptionPrice
         stripeLink
         callout
+        thirtyDay
+        ninetyDay
+        threeSixtyDay
         createdAt
         updatedAt
         customerLibaryClientCoursesId
@@ -12790,6 +14131,9 @@ export const createAchievementCourses = /* GraphQL */ `
         subscriptionPrice
         stripeLink
         callout
+        thirtyDay
+        ninetyDay
+        threeSixtyDay
         createdAt
         updatedAt
         customerLibaryClientCoursesId
@@ -12851,6 +14195,9 @@ export const updateAchievementCourses = /* GraphQL */ `
         subscriptionPrice
         stripeLink
         callout
+        thirtyDay
+        ninetyDay
+        threeSixtyDay
         createdAt
         updatedAt
         customerLibaryClientCoursesId
@@ -12912,6 +14259,9 @@ export const deleteAchievementCourses = /* GraphQL */ `
         subscriptionPrice
         stripeLink
         callout
+        thirtyDay
+        ninetyDay
+        threeSixtyDay
         createdAt
         updatedAt
         customerLibaryClientCoursesId
@@ -12973,6 +14323,9 @@ export const createPartnerCourses = /* GraphQL */ `
         subscriptionPrice
         stripeLink
         callout
+        thirtyDay
+        ninetyDay
+        threeSixtyDay
         createdAt
         updatedAt
         customerLibaryClientCoursesId
@@ -13033,6 +14386,9 @@ export const updatePartnerCourses = /* GraphQL */ `
         subscriptionPrice
         stripeLink
         callout
+        thirtyDay
+        ninetyDay
+        threeSixtyDay
         createdAt
         updatedAt
         customerLibaryClientCoursesId
@@ -13093,6 +14449,9 @@ export const deletePartnerCourses = /* GraphQL */ `
         subscriptionPrice
         stripeLink
         callout
+        thirtyDay
+        ninetyDay
+        threeSixtyDay
         createdAt
         updatedAt
         customerLibaryClientCoursesId
@@ -13153,6 +14512,9 @@ export const createLibraryCourses = /* GraphQL */ `
         subscriptionPrice
         stripeLink
         callout
+        thirtyDay
+        ninetyDay
+        threeSixtyDay
         createdAt
         updatedAt
         customerLibaryClientCoursesId
@@ -13179,6 +14541,8 @@ export const createLibraryCourses = /* GraphQL */ `
         availableCodes
         usedCodes
         promotionId
+        thinkificGroupId
+        thinkificGroupName
         createdAt
         updatedAt
         __typename
@@ -13228,6 +14592,9 @@ export const updateLibraryCourses = /* GraphQL */ `
         subscriptionPrice
         stripeLink
         callout
+        thirtyDay
+        ninetyDay
+        threeSixtyDay
         createdAt
         updatedAt
         customerLibaryClientCoursesId
@@ -13254,6 +14621,8 @@ export const updateLibraryCourses = /* GraphQL */ `
         availableCodes
         usedCodes
         promotionId
+        thinkificGroupId
+        thinkificGroupName
         createdAt
         updatedAt
         __typename
@@ -13303,6 +14672,9 @@ export const deleteLibraryCourses = /* GraphQL */ `
         subscriptionPrice
         stripeLink
         callout
+        thirtyDay
+        ninetyDay
+        threeSixtyDay
         createdAt
         updatedAt
         customerLibaryClientCoursesId
@@ -13329,6 +14701,8 @@ export const deleteLibraryCourses = /* GraphQL */ `
         availableCodes
         usedCodes
         promotionId
+        thinkificGroupId
+        thinkificGroupName
         createdAt
         updatedAt
         __typename
@@ -13378,6 +14752,9 @@ export const createCourseGlossaryTerms = /* GraphQL */ `
         subscriptionPrice
         stripeLink
         callout
+        thirtyDay
+        ninetyDay
+        threeSixtyDay
         createdAt
         updatedAt
         customerLibaryClientCoursesId
@@ -13443,6 +14820,9 @@ export const updateCourseGlossaryTerms = /* GraphQL */ `
         subscriptionPrice
         stripeLink
         callout
+        thirtyDay
+        ninetyDay
+        threeSixtyDay
         createdAt
         updatedAt
         customerLibaryClientCoursesId
@@ -13508,6 +14888,9 @@ export const deleteCourseGlossaryTerms = /* GraphQL */ `
         subscriptionPrice
         stripeLink
         callout
+        thirtyDay
+        ninetyDay
+        threeSixtyDay
         createdAt
         updatedAt
         customerLibaryClientCoursesId
