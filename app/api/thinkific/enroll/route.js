@@ -16,6 +16,8 @@ const THINKIFIC_GRAPHQL_URL =
 const THINKIFIC_USERS_URL =
   process.env.THINKIFIC_USERS_URL || "https://api.thinkific.com/api/public/v1/users";
 const DEFAULT_GROWTHZONE_CERTIFICATION_TYPE_ID = 4806;
+const THINKIFIC_PARTNER_CODE_FIELD_ID = 296309;
+const THINKIFIC_PARTNER_CODE = "ppcu";
 
 const USER_BY_EMAIL_QUERY = `
   query UserByEmail($email: EmailAddress!) {
@@ -144,6 +146,12 @@ async function createThinkificUser({ email, first_name, last_name, restApiKey, s
       first_name,
       last_name,
       provider: "SSO",
+      custom_profile_fields: [
+        {
+          value: THINKIFIC_PARTNER_CODE,
+          custom_profile_field_definition_id: THINKIFIC_PARTNER_CODE_FIELD_ID,
+        },
+      ],
     }),
     cache: "no-store",
   });
