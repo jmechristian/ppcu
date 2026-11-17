@@ -79,6 +79,55 @@ function progressFromLearner(learner) {
   };
 }
 
+function previewEmailFromRequest(request) {
+  if (process.env.NODE_ENV === "production") return "";
+  const email = new URL(request.url).searchParams.get("previewEmail");
+  return String(email || "").trim().toLowerCase();
+}
+
+async function resolvePreviewIdentity(baseUrl, apiKey, email) {
+  const listRes = await fetchJson(`${baseUrl}/api/contacts?$top=10`, {
+    method: "POST",
+    headers: getApiHeaders(apiKey),
+    body: JSON.stringify({ EmailContains: email }),
+  });
+  const match =
+    readResults(listRes.json).find(
+      (row) => String(row?.EmailAddress || "").trim().toLowerCase() === email,
+    ) || null;
+  const personContactId = toPositiveInt(match?.ContactId);
+  if (!personContactId) return null;
+
+  const [overview, contactOrgsRes] = await Promise.all([
+    fetchContactOverview(baseUrl, apiKey, personContactId),
+    fetchJson(`${baseUrl}/api/ContactOverview/${personContactId}/ContactOrgs/`, {
+      method: "GET",
+      headers: getApiHeaders(apiKey),
+    }),
+  ]);
+
+  const firstOrg = readResults(contactOrgsRes.json)?.[0] ?? null;
+  const orgDetails = extractOrgDetails(firstOrg);
+  const nameParts = splitNameParts(overview?.name || match?.Name || "");
+
+  return {
+    personContactId,
+    organizationContactId: extractOrganizationContactId(firstOrg, personContactId),
+    roleType: orgDetails.type || "",
+    profile: {
+      firstName: overview?.firstName || nameParts.firstName || null,
+      lastName: overview?.lastName || nameParts.lastName || null,
+      name: overview?.name || match?.Name || null,
+      email: overview?.email || match?.EmailAddress || email,
+      contactId: personContactId,
+      organizationContactId: extractOrganizationContactId(firstOrg, personContactId),
+      business: orgDetails.business,
+      title: orgDetails.title,
+      type: orgDetails.type || "",
+    },
+  };
+}
+
 function buildTrackingByContactId(rows) {
   const map = new Map();
   for (const row of rows) {
@@ -100,53 +149,73 @@ async function handleGet(request) {
     );
   }
 
-  const cookies = parseCookies(request.headers.get("cookie"));
-  const accessToken = cookies.growthzone_oauth_access_token;
-  if (!accessToken) {
-    return NextResponse.json({ connected: false }, { status: 200 });
+  const previewEmail = previewEmailFromRequest(request);
+  let personContactId;
+  let organizationContactId;
+  let roleType;
+  let profile;
+
+  if (previewEmail) {
+    const previewIdentity = await resolvePreviewIdentity(baseUrl, apiKey, previewEmail);
+    if (!previewIdentity) {
+      return NextResponse.json(
+        { connected: false, message: "Preview contact was not found." },
+        { status: 404 },
+      );
+    }
+    personContactId = previewIdentity.personContactId;
+    organizationContactId = previewIdentity.organizationContactId;
+    roleType = previewIdentity.roleType;
+    profile = previewIdentity.profile;
+  } else {
+    const cookies = parseCookies(request.headers.get("cookie"));
+    const accessToken = cookies.growthzone_oauth_access_token;
+    if (!accessToken) {
+      return NextResponse.json({ connected: false }, { status: 200 });
+    }
+
+    const authHeader = {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    };
+
+    const aboutMeRes = await fetchJson(`${baseUrl}/api/login/aboutme`, {
+      method: "GET",
+      headers: authHeader,
+    });
+
+    if (!aboutMeRes.response.ok || !aboutMeRes.json) {
+      return NextResponse.json({ connected: false }, { status: 200 });
+    }
+
+    const aboutMe = aboutMeRes.json;
+    personContactId = toPositiveInt(aboutMe?.ContactId);
+    if (!personContactId) {
+      return NextResponse.json({ connected: false }, { status: 200 });
+    }
+
+    const contactOrgsRes = await fetchJson(
+      `${baseUrl}/api/ContactOverview/${personContactId}/ContactOrgs/`,
+      { method: "GET", headers: getApiHeaders(apiKey) },
+    );
+
+    const firstOrg = readResults(contactOrgsRes.json)?.[0] ?? null;
+    const orgDetails = extractOrgDetails(firstOrg);
+    organizationContactId = extractOrganizationContactId(firstOrg, personContactId);
+    roleType = orgDetails.type || "";
+
+    profile = {
+      firstName: aboutMe?.FirstName ?? null,
+      lastName: aboutMe?.LastName ?? null,
+      name: aboutMe?.Name ?? null,
+      email: aboutMe?.PrimaryEmailAddress ?? aboutMe?.Email ?? null,
+      contactId: personContactId,
+      organizationContactId,
+      business: orgDetails.business,
+      title: orgDetails.title,
+      type: roleType,
+    };
   }
-
-  const authHeader = {
-    Authorization: `Bearer ${accessToken}`,
-    "Content-Type": "application/json",
-  };
-
-  const aboutMeRes = await fetchJson(`${baseUrl}/api/login/aboutme`, {
-    method: "GET",
-    headers: authHeader,
-  });
-
-  if (!aboutMeRes.response.ok || !aboutMeRes.json) {
-    return NextResponse.json({ connected: false }, { status: 200 });
-  }
-
-  const aboutMe = aboutMeRes.json;
-  const personContactId = toPositiveInt(aboutMe?.ContactId);
-  if (!personContactId) {
-    return NextResponse.json({ connected: false }, { status: 200 });
-  }
-
-  const contactOrgsRes = await fetchJson(
-    `${baseUrl}/api/ContactOverview/${personContactId}/ContactOrgs/`,
-    { method: "GET", headers: getApiHeaders(apiKey) },
-  );
-
-  const firstOrg = readResults(contactOrgsRes.json)?.[0] ?? null;
-  const orgDetails = extractOrgDetails(firstOrg);
-  const organizationContactId = extractOrganizationContactId(firstOrg, personContactId);
-  const roleType = orgDetails.type || "";
-
-  const profile = {
-    firstName: aboutMe?.FirstName ?? null,
-    lastName: aboutMe?.LastName ?? null,
-    name: aboutMe?.Name ?? null,
-    email: aboutMe?.PrimaryEmailAddress ?? aboutMe?.Email ?? null,
-    contactId: personContactId,
-    organizationContactId,
-    business: orgDetails.business,
-    title: orgDetails.title,
-    type: roleType,
-  };
 
   if (isStaffContactType(roleType)) {
     const { restApiKey, subdomain } = getThinkificRestCreds();
@@ -154,6 +223,7 @@ async function handleGet(request) {
     const staffLearners = await fetchAllBundleLearners({ bundleId, restApiKey, subdomain });
     return NextResponse.json({
       connected: true,
+      preview: Boolean(previewEmail),
       view: "staff",
       profile,
       bundleId,
@@ -164,6 +234,7 @@ async function handleGet(request) {
   if (!isPrimaryContactType(roleType)) {
     return NextResponse.json({
       connected: true,
+      preview: Boolean(previewEmail),
       view: "limited",
       profile,
       message: "Admin tools are available for primary and staff contacts.",
@@ -173,6 +244,7 @@ async function handleGet(request) {
   if (!organizationContactId) {
     return NextResponse.json({
       connected: true,
+      preview: Boolean(previewEmail),
       view: "primary",
       profile,
       activeLearners: [],
@@ -278,6 +350,7 @@ async function handleGet(request) {
 
   return NextResponse.json({
     connected: true,
+    preview: Boolean(previewEmail),
     view: "primary",
     profile,
     organizationContactId,

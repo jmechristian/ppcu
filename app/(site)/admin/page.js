@@ -26,6 +26,47 @@ function splitName(fullName) {
 }
 
 const STAFF_PAGE_SIZE = 25;
+const PRIMARY_PAGE_SIZE = 20;
+
+function matchesQuery(query, values) {
+  const q = String(query || "").trim().toLowerCase();
+  if (!q) return true;
+  return values.some((value) => String(value || "").toLowerCase().includes(q));
+}
+
+function hasCertificationRecord(row) {
+  return Boolean(
+    String(row?.certificationName || "").trim() ||
+      String(row?.statusText || row?.status || "").trim(),
+  );
+}
+
+function TablePager({ page, totalPages, onPageChange }) {
+  if (totalPages <= 1) return null;
+  return (
+    <div className="mt-4 flex items-center justify-between">
+      <button
+        type="button"
+        disabled={page <= 1}
+        onClick={() => onPageChange(page - 1)}
+        className="rounded border border-gray-300 px-3 py-1.5 text-sm font-semibold text-gray-700 disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        Previous
+      </button>
+      <span className="text-sm text-gray-600">
+        Page {page} of {totalPages}
+      </span>
+      <button
+        type="button"
+        disabled={page >= totalPages}
+        onClick={() => onPageChange(page + 1)}
+        className="rounded border border-gray-300 px-3 py-1.5 text-sm font-semibold text-gray-700 disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        Next
+      </button>
+    </div>
+  );
+}
 
 export default function AdminPage() {
   const { profile } = useGrowthzoneProfile();
@@ -37,6 +78,10 @@ export default function AdminPage() {
   const [enrollError, setEnrollError] = useState("");
   const [enrollingContactId, setEnrollingContactId] = useState(null);
   const [learnerPage, setLearnerPage] = useState(1);
+  const [primaryLearnerQuery, setPrimaryLearnerQuery] = useState("");
+  const [primaryLearnerPage, setPrimaryLearnerPage] = useState(1);
+  const [orgContactQuery, setOrgContactQuery] = useState("");
+  const [orgContactPage, setOrgContactPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
@@ -60,9 +105,17 @@ export default function AdminPage() {
 
       let adminJson = null;
 
+      const previewEmail =
+        process.env.NODE_ENV !== "production"
+          ? new URLSearchParams(window.location.search).get("previewEmail")
+          : "";
+      const adminUrl = previewEmail
+        ? `/api/growthzone/admin?previewEmail=${encodeURIComponent(previewEmail)}`
+        : "/api/growthzone/admin";
+
       for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
         try {
-          const adminRes = await fetch("/api/growthzone/admin", {
+          const adminRes = await fetch(adminUrl, {
             cache: "no-store",
             credentials: "include",
           });
@@ -131,13 +184,61 @@ export default function AdminPage() {
     staffCurrentPage * STAFF_PAGE_SIZE,
   );
 
+  const certifiedLearners = useMemo(
+    () => activeLearners.filter(hasCertificationRecord),
+    [activeLearners],
+  );
+  const filteredLearners = useMemo(
+    () =>
+      certifiedLearners.filter((row) =>
+        matchesQuery(primaryLearnerQuery, [
+          row.contactName,
+          row.certificationName,
+          row.statusText,
+          row.status,
+          row.percentage,
+        ]),
+      ),
+    [certifiedLearners, primaryLearnerQuery],
+  );
+  const learnerPageCount = Math.max(1, Math.ceil(filteredLearners.length / PRIMARY_PAGE_SIZE));
+  const learnerCurrentPage = Math.min(primaryLearnerPage, learnerPageCount);
+  const learnerPageRows = filteredLearners.slice(
+    (learnerCurrentPage - 1) * PRIMARY_PAGE_SIZE,
+    learnerCurrentPage * PRIMARY_PAGE_SIZE,
+  );
+
+  const filteredContacts = useMemo(
+    () =>
+      relatedContacts.filter((contact) =>
+        matchesQuery(orgContactQuery, [contact.name, contact.title, contact.type, contact.email]),
+      ),
+    [relatedContacts, orgContactQuery],
+  );
+  const contactPageCount = Math.max(1, Math.ceil(filteredContacts.length / PRIMARY_PAGE_SIZE));
+  const contactCurrentPage = Math.min(orgContactPage, contactPageCount);
+  const contactPageRows = filteredContacts.slice(
+    (contactCurrentPage - 1) * PRIMARY_PAGE_SIZE,
+    contactCurrentPage * PRIMARY_PAGE_SIZE,
+  );
+
+  const isPreview = Boolean(payload?.preview);
+  const headerProfile = isPreview ? adminProfile : profile;
   const fullName = useMemo(
     () =>
-      [profile.firstName, profile.lastName].filter(Boolean).join(" ") ||
+      [headerProfile.firstName, headerProfile.lastName].filter(Boolean).join(" ") ||
       [adminProfile.firstName, adminProfile.lastName].filter(Boolean).join(" ") ||
+      headerProfile.name ||
       adminProfile.name ||
       "",
-    [adminProfile.firstName, adminProfile.lastName, adminProfile.name, profile.firstName, profile.lastName],
+    [
+      adminProfile.firstName,
+      adminProfile.lastName,
+      adminProfile.name,
+      headerProfile.firstName,
+      headerProfile.lastName,
+      headerProfile.name,
+    ],
   );
 
   async function handleEnrollContact(contact) {
@@ -237,14 +338,22 @@ export default function AdminPage() {
             <div className="space-y-2">
               <div className="text-2xl font-bold">{`Welcome, ${fullName || "Admin"}`}</div>
               <div className="text-sm text-white/90">
-                {[profile.title || adminProfile.title, profile.business || adminProfile.business]
+                {[
+                  isPreview ? adminProfile.title : profile.title || adminProfile.title,
+                  isPreview ? adminProfile.business : profile.business || adminProfile.business,
+                ]
                   .filter(Boolean)
                   .join(" - ")}
               </div>
-              {(profile.type || adminProfile.type) && (
+              {(isPreview ? adminProfile.type : profile.type || adminProfile.type) && (
                 <span className="inline-flex items-center rounded-full bg-brand-green px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-white">
-                  {profile.type || adminProfile.type}
+                  {isPreview ? adminProfile.type : profile.type || adminProfile.type}
                 </span>
+              )}
+              {isPreview && (
+                <div className="text-xs text-white/70">
+                  Local preview of {adminProfile.email}. This only works in development.
+                </div>
               )}
             </div>
           )}
@@ -260,10 +369,27 @@ export default function AdminPage() {
       {view === "primary" && (
         <>
           <section className="rounded-xl border border-gray-200 bg-white p-6">
-            <h2 className="text-xl font-bold text-gray-900">Active Learners</h2>
-            <p className="mt-1 text-sm text-gray-600">
-              Organization members with certification activity.
-            </p>
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Active Learners</h2>
+                <p className="mt-1 text-sm text-gray-600">
+                  Organization members with certification activity.
+                </p>
+              </div>
+              {certifiedLearners.length > 0 && (
+                <span className="text-sm text-gray-500">{filteredLearners.length} shown</span>
+              )}
+            </div>
+            <input
+              type="text"
+              value={primaryLearnerQuery}
+              onChange={(event) => {
+                setPrimaryLearnerQuery(event.target.value);
+                setPrimaryLearnerPage(1);
+              }}
+              placeholder="Search learners..."
+              className="mt-4 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-brand-blue focus:outline-none"
+            />
             <div className="mt-4 overflow-x-auto">
               <table className="min-w-full text-sm">
                 <thead>
@@ -276,7 +402,7 @@ export default function AdminPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {activeLearners.map((row) => (
+                  {learnerPageRows.map((row) => (
                     <tr
                       key={`${row.contactId}-${row.certificationContactId}-${row.certificationTypeId}`}
                       className="border-b border-gray-100 text-gray-800"
@@ -290,17 +416,43 @@ export default function AdminPage() {
                   ))}
                 </tbody>
               </table>
-              {!loading && activeLearners.length === 0 && (
-                <p className="py-4 text-gray-500">No active learners in your organization yet.</p>
+              {!loading && filteredLearners.length === 0 && (
+                <p className="py-4 text-gray-500">
+                  {primaryLearnerQuery.trim()
+                    ? "No learners match that search."
+                    : "No active learners in your organization yet."}
+                </p>
               )}
             </div>
+            <TablePager
+              page={learnerCurrentPage}
+              totalPages={learnerPageCount}
+              onPageChange={setPrimaryLearnerPage}
+            />
           </section>
 
           <section className="rounded-xl border border-gray-200 bg-white p-6">
-            <h2 className="text-xl font-bold text-gray-900">Organization Contacts</h2>
-            <p className="mt-1 text-sm text-gray-600">
-              All contacts linked to {adminProfile.business || "your organization"}.
-            </p>
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Organization Contacts</h2>
+                <p className="mt-1 text-sm text-gray-600">
+                  All contacts linked to {adminProfile.business || "your organization"}.
+                </p>
+              </div>
+              {relatedContacts.length > 0 && (
+                <span className="text-sm text-gray-500">{filteredContacts.length} shown</span>
+              )}
+            </div>
+            <input
+              type="text"
+              value={orgContactQuery}
+              onChange={(event) => {
+                setOrgContactQuery(event.target.value);
+                setOrgContactPage(1);
+              }}
+              placeholder="Search contacts..."
+              className="mt-4 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-brand-blue focus:outline-none"
+            />
             <div className="mt-4 overflow-x-auto">
               <table className="min-w-full text-sm">
                 <thead>
@@ -314,7 +466,7 @@ export default function AdminPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {relatedContacts.map((contact) => {
+                  {contactPageRows.map((contact) => {
                     const contactId = Number(contact.contactId);
                     const isEnrolling = enrollingContactId === contactId;
                     const canEnroll = Boolean(
@@ -352,10 +504,19 @@ export default function AdminPage() {
                   })}
                 </tbody>
               </table>
-              {!loading && relatedContacts.length === 0 && (
-                <p className="py-4 text-gray-500">No organization contacts returned.</p>
+              {!loading && filteredContacts.length === 0 && (
+                <p className="py-4 text-gray-500">
+                  {orgContactQuery.trim()
+                    ? "No contacts match that search."
+                    : "No organization contacts returned."}
+                </p>
               )}
             </div>
+            <TablePager
+              page={contactCurrentPage}
+              totalPages={contactPageCount}
+              onPageChange={setOrgContactPage}
+            />
           </section>
         </>
       )}
