@@ -195,6 +195,129 @@ export function normalizeOrgContact(item) {
   };
 }
 
+function cleanPersonName(name, addressString) {
+  const raw = String(name || "").replace(/\s+/g, " ").trim();
+  const address = String(addressString || "").replace(/\s+/g, " ").trim();
+  if (!raw || !address) return raw;
+  const parts = address.split(" ").filter(Boolean);
+  if (parts.length < 2) return raw;
+  const suffix = `${parts[parts.length - 2]} ${parts[parts.length - 1]}`;
+  if (raw.toLowerCase().endsWith(suffix.toLowerCase())) {
+    return raw.slice(0, raw.length - suffix.length).trim();
+  }
+  return raw;
+}
+
+export async function mapWithConcurrency(items, limit, mapper) {
+  const list = Array.isArray(items) ? items : [];
+  if (!list.length) return [];
+  const results = new Array(list.length);
+  let next = 0;
+  const workers = Array.from({ length: Math.min(limit, list.length) }, async () => {
+    while (next < list.length) {
+      const current = next;
+      next += 1;
+      results[current] = await mapper(list[current], current);
+    }
+  });
+  await Promise.all(workers);
+  return results;
+}
+
+// OrgContacts is the overview widget: it reports the full count, then returns
+// only the first 20 rows and ignores skip/top. people/0 is the complete list.
+export async function fetchOrganizationRoster(
+  baseUrl,
+  apiKey,
+  organizationContactId,
+  timeoutMs = DEFAULT_TIMEOUT_MS,
+) {
+  const orgId = toPositiveInt(organizationContactId);
+  if (!orgId) return [];
+
+  const root = trimSlash(baseUrl);
+  const headers = getApiHeaders(apiKey);
+  const [peopleRes, previewRes] = await Promise.all([
+    fetchJson(
+      `${root}/api/contacts/contact/${orgId}/people/0`,
+      { method: "GET", headers },
+      timeoutMs,
+    ),
+    fetchJson(
+      `${root}/api/ContactOverview/${orgId}/OrgContacts/`,
+      { method: "GET", headers },
+      timeoutMs,
+    ),
+  ]);
+
+  const previewById = new Map();
+  for (const row of readResults(previewRes.json).map(normalizeOrgContact)) {
+    const id = toPositiveInt(row.contactId);
+    if (id) previewById.set(id, row);
+  }
+
+  const peopleItems = Array.isArray(peopleRes.json) ? peopleRes.json : readResults(peopleRes.json);
+  const seen = new Set();
+  const people = [];
+  for (const item of peopleItems) {
+    if (item?.IsDeleted) continue;
+    const contactId = toPositiveInt(item?.Id ?? item?.ContactId);
+    if (!contactId || seen.has(contactId)) continue;
+    seen.add(contactId);
+    people.push({
+      contactId,
+      name: cleanPersonName(item?.Name, item?.AddressString),
+      email: String(item?.EmailAddress || "").trim(),
+    });
+  }
+
+  const baseRows = people.length
+    ? people
+    : [...previewById.values()]
+        .map((row) => ({
+          contactId: toPositiveInt(row.contactId),
+          name: row.name || "",
+          email: "",
+        }))
+        .filter((row) => row.contactId);
+
+  return mapWithConcurrency(baseRows, 8, async (person) => {
+    const preview = previewById.get(person.contactId);
+    let type = preview?.type || "";
+    let title = preview?.title || "";
+    let contactRoleId = preview?.contactRoleId ?? null;
+    let statusText = preview?.statusText || "";
+
+    if (!type || contactRoleId == null) {
+      const roleRes = await fetchJson(
+        `${root}/api/ContactOverview/${person.contactId}/ContactOrgs/`,
+        { method: "GET", headers },
+        timeoutMs,
+      );
+      const roles = readResults(roleRes.json);
+      const match =
+        roles.find((item) => toPositiveInt(item?.ContactId) === orgId) || roles[0] || null;
+      if (match) {
+        type = type || match.Type || "";
+        title = title || match.Title || "";
+        contactRoleId = contactRoleId ?? match.ContactRoleId ?? null;
+        statusText = statusText || match.StatusText || "";
+      }
+    }
+
+    return {
+      contactRoleId,
+      contactId: person.contactId,
+      organizationId: orgId,
+      name: preview?.name || person.name || "",
+      title: title || "",
+      type: type || "",
+      statusText,
+      email: person.email || "",
+    };
+  });
+}
+
 export function splitNameParts(fullName) {
   const parts = String(fullName || "")
     .trim()

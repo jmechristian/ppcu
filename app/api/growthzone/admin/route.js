@@ -6,10 +6,11 @@ import {
   fetchContactCertifications,
   fetchContactOverview,
   fetchJson,
+  fetchOrganizationRoster,
   getApiHeaders,
   isPrimaryContactType,
   isStaffContactType,
-  normalizeOrgContact,
+  mapWithConcurrency,
   parseCookies,
   readResults,
   splitNameParts,
@@ -18,7 +19,6 @@ import {
 } from "@/app/lib/growthzone-api";
 import {
   fetchAllBundleLearners,
-  fetchBundleProgressByEmail,
   getPpcuBundleId,
 } from "@/app/lib/thinkific-enrollments";
 
@@ -62,6 +62,20 @@ function buildActiveLearnerRow(contact, cert, trackingRow) {
     completedDate: source.completedDate ?? null,
     hoursEarned: source.hoursEarned ?? 0,
     creditsEarned: source.creditsEarned ?? 0,
+  };
+}
+
+function emptyProgress() {
+  return { enrolled: false, percent: 0, completedCourses: 0, totalCourses: 0 };
+}
+
+function progressFromLearner(learner) {
+  if (!learner) return emptyProgress();
+  return {
+    enrolled: true,
+    percent: Number(learner.percent) || 0,
+    completedCourses: learner.completedCourses || 0,
+    totalCourses: learner.totalCourses || 0,
   };
 }
 
@@ -167,40 +181,37 @@ async function handleGet(request) {
     });
   }
 
-  const [orgContactsRes, trackingRows] = await Promise.all([
-    fetchJson(`${baseUrl}/api/ContactOverview/${organizationContactId}/OrgContacts/`, {
-      method: "GET",
-      headers: getApiHeaders(apiKey),
-    }),
-    fetchAllCertificationTracking(baseUrl, apiKey),
-  ]);
-
-  const orgContacts = readResults(orgContactsRes.json).map(normalizeOrgContact);
-  const orgContactIds = new Set(
-    orgContacts.map((row) => toPositiveInt(row.contactId)).filter(Boolean),
-  );
-  const trackingByContact = buildTrackingByContactId(trackingRows);
   const { restApiKey, subdomain } = getThinkificRestCreds();
   const bundleId = getPpcuBundleId();
+  const [orgContacts, trackingRows, bundleLearners] = await Promise.all([
+    fetchOrganizationRoster(baseUrl, apiKey, organizationContactId),
+    fetchAllCertificationTracking(baseUrl, apiKey),
+    fetchAllBundleLearners({ bundleId, restApiKey, subdomain }),
+  ]);
 
-  const relatedContacts = await Promise.all(
-    orgContacts.map(async (contact) => {
+  const trackingByContact = buildTrackingByContactId(trackingRows);
+  const progressByEmail = new Map(
+    bundleLearners.map((row) => [String(row.email || "").trim().toLowerCase(), row]),
+  );
+
+  const relatedContacts = await mapWithConcurrency(orgContacts, 8, async (contact) => {
       const contactId = toPositiveInt(contact.contactId);
       const trackingForContact = contactId ? trackingByContact.get(contactId) || [] : [];
 
-      let email = "";
+      let email = String(contact.email || "").trim();
       let firstName = "";
       let lastName = "";
       let contactCerts = [];
 
       if (contactId) {
+        const needsOverview = !email || !contact.name;
         const [overview, certs] = await Promise.all([
-          fetchContactOverview(baseUrl, apiKey, contactId),
+          needsOverview ? fetchContactOverview(baseUrl, apiKey, contactId) : Promise.resolve(null),
           fetchContactCertifications(baseUrl, apiKey, contactId),
         ]);
         contactCerts = certs;
         if (overview) {
-          email = overview.email || "";
+          email = email || overview.email || "";
           firstName = overview.firstName || "";
           lastName = overview.lastName || "";
           if (!contact.name && overview.name) contact.name = overview.name;
@@ -218,8 +229,8 @@ async function handleGet(request) {
       }
 
       const progress = email
-        ? await fetchBundleProgressByEmail({ email, bundleId, restApiKey, subdomain })
-        : { enrolled: false, percent: 0, completedCourses: 0, totalCourses: 0 };
+        ? progressFromLearner(progressByEmail.get(email.toLowerCase()))
+        : emptyProgress();
 
       const primaryCert = pickPrimaryCert(contactCerts, trackingForContact);
       const isEnrolled = progress.enrolled || contactCerts.length > 0 || trackingForContact.length > 0;
@@ -242,10 +253,11 @@ async function handleGet(request) {
           statusText: primaryCert?.statusText || contact.statusText || "",
         },
       };
-    }),
-  );
+  });
 
-  const relatedContactsOut = relatedContacts.map((row) => row.enriched);
+  const relatedContactsOut = relatedContacts
+    .map((row) => row.enriched)
+    .sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")));
 
   const activeLearners = relatedContacts
     .filter((row) => row.progress?.enrolled)
@@ -261,7 +273,8 @@ async function handleGet(request) {
         completedCourses: row.progress.completedCourses,
         totalCourses: row.progress.totalCourses,
       };
-    });
+    })
+    .sort((a, b) => String(a.contactName || "").localeCompare(String(b.contactName || "")));
 
   return NextResponse.json({
     connected: true,
